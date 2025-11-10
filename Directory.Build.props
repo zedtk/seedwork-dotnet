@@ -1,22 +1,22 @@
 <Project>
     <PropertyGroup>
-        <!-- Common properties for all projects -->
+        <!-- Common build properties -->
+        <TargetFramework>net8.0</TargetFramework>
         <LangVersion>latest</LangVersion>
-        <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
-        <!-- NuGet Package properties -->
-        <Authors>Your Name</Authors>
-        <Company>Your Company</Company>
-        <Copyright>Copyright © $(Company) $([System.DateTime]::Now.Year)</Copyright>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/yourorg/seedwork-dotnet</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/yourorg/seedwork-dotnet</RepositoryUrl>
+        <!-- Common NuGet package properties -->
+        <Authors>Ze Dev ToolKit (ZeDTK)</Authors>
+        <Company>Ze Dev ToolKit</Company>
+        <Copyright>Copyright © $([System.DateTime]::Now.Year) Ze Dev ToolKit (ZeDTK)</Copyright>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/zedtk/seedwork-dotnet</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/zedtk/seedwork-dotnet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageReadmeFile>README.md</PackageReadmeFile>
 
-        <!-- Versioning with GitVersion -->
+        <!-- Documentation and debugging -->
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -28,6 +28,6 @@
 
     <!-- SourceLink support for better debugging experience -->
     <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     </ItemGroup>
 </Project>

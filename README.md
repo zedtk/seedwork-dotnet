@@ -1,12 +1,14 @@
 # Seedwork .NET
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Nx](https://img.shields.io/badge/Nx-22.0-143055?logo=nx)](https://nx.dev/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 Domain-Driven Design building blocks for .NET managed with Nx.
 
 **Maintained by [Ze Dev ToolKit (ZeDTK)](https://github.com/zedtk)**
+
+**Target Framework:** .NET 8.0 | **SDK:** .NET 9.0
 
 ## 🚀 Quick Start
 
@@ -33,8 +35,8 @@ npm run release
 
 ```bash
 # Create the library and tests
-dotnet new classlib -n Seedwork.NewLib -o packages/newlib/src -f net9.0
-dotnet new xunit -n Seedwork.NewLib.Tests -o packages/newlib/test -f net9.0
+dotnet new classlib -n Seedwork.NewLib -o packages/newlib/src -f net8.0
+dotnet new xunit -n Seedwork.NewLib.Tests -o packages/newlib/test -f net8.0
 
 # Add reference and to solution
 cd packages/newlib/test && dotnet add reference ../src/Seedwork.NewLib.csproj

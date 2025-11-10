@@ -7,8 +7,34 @@
       "sharedGlobals"
     ],
     "production": [
-      "default"
+      "default",
+      "!{projectRoot}/**/*.spec.cs",
+      "!{projectRoot}/test/**/*"
     ],
-    "sharedGlobals": []
+    "sharedGlobals": [
+      "{workspaceRoot}/GitVersion.yml",
+      "{workspaceRoot}/Directory.Build.props"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "test": {
+      "cache": true,
+      "dependsOn": ["build"],
+      "inputs": ["default", "^production"]
+    },
+    "pack": {
+      "cache": true,
+      "dependsOn": ["build"],
+      "inputs": ["production", "^production"]
+    },
+    "publish": {
+      "cache": false,
+      "dependsOn": ["pack"]
+    }
   }
 }

@@ -2,12 +2,21 @@
   "name": "@seedwork-dotnet/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "build": "nx run-many --target=build --all",
+    "test": "nx run-many --target=test --all",
+    "pack": "nx run-many --target=pack --all",
+    "publish": "nx run-many --target=publish --all",
+    "version": "dotnet-gitversion /output json"
+  },
   "private": true,
   "dependencies": {},
   "devDependencies": {
     "@nx/js": "22.0.2",
     "@nx/workspace": "22.0.2",
     "nx": "22.0.2"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

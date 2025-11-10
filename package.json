@@ -7,7 +7,9 @@
     "test": "nx run-many --target=test --all",
     "pack": "nx run-many --target=pack --all",
     "publish": "nx run-many --target=publish --all",
-    "version": "dotnet-gitversion /output json"
+    "release": "nx release --skip-publish",
+    "release:version": "nx release version",
+    "release:publish": "nx release publish"
   },
   "private": true,
   "devDependencies": {

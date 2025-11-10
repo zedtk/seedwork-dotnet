@@ -35,62 +35,42 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v1.1.1
-      with:
-        versionSpec: '5.x'
-    
-    - name: Determine Version
-      id: gitversion
-      uses: gittools/actions/gitversion/execute@v1.1.1
-      with:
-        useConfigFile: true
-        configFilePath: GitVersion.yml
-    
-    - name: Display GitVersion outputs
-      run: |
-        echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
-        echo "NuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2 }}"
-    
     - name: Restore dependencies
       run: dotnet restore SeedworkDotnet.sln
     
     - name: Build all projects
       run: npx nx run-many --target=build --all
-      env:
-        VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
     
     - name: Test all projects
       run: npx nx run-many --target=test --all
-    
-    - name: Pack all packages
-      run: npx nx run-many --target=pack --all
-      env:
-        VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
     
     - name: Upload NuGet packages
       uses: actions/upload-artifact@v4
       with:
         name: nuget-packages
-        path: 'packages/**/bin/Release/*.nupkg'
+        path: 'packages/**/bin/**/*.nupkg'
         retention-days: 7
     
     - name: Upload symbol packages
       uses: actions/upload-artifact@v4
       with:
         name: symbol-packages
-        path: 'packages/**/bin/Release/*.snupkg'
+        path: 'packages/**/bin/**/*.snupkg'
         retention-days: 7
   
-  publish:
+  release:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: write
     
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -106,30 +86,28 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v1.1.1
-      with:
-        versionSpec: '5.x'
-    
-    - name: Determine Version
-      id: gitversion
-      uses: gittools/actions/gitversion/execute@v1.1.1
-      with:
-        useConfigFile: true
-        configFilePath: GitVersion.yml
-    
-    - name: Restore dependencies
+    - name: Restore .NET dependencies
       run: dotnet restore SeedworkDotnet.sln
     
-    - name: Build all projects
-      run: npx nx run-many --target=build --all
+    - name: Create release and tags
+      run: npx nx release --skip-publish
       env:
-        VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Pack all packages
-      run: npx nx run-many --target=pack --all
-      env:
-        VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
+    - name: Get version from latest tag
+      id: version
+      run: |
+        VERSION=$(git describe --tags --abbrev=0 | sed 's/.*@v//')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Build with version
+      run: dotnet build SeedworkDotnet.sln -p:Version=${{ steps.version.outputs.version }} --no-restore
+    
+    - name: Pack with version
+      run: |
+        for project in packages/*/src/*.csproj; do
+          dotnet pack "$project" -p:Version=${{ steps.version.outputs.version }} --no-build -c Release
+        done
     
     - name: Publish to NuGet
       run: |

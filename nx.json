@@ -15,7 +15,6 @@
       "!{projectRoot}/**/obj/**/*"
     ],
     "sharedGlobals": [
-      "{workspaceRoot}/GitVersion.yml",
       "{workspaceRoot}/Directory.Build.props"
     ]
   },
@@ -59,5 +58,29 @@
   },
   "plugins": [
     "@nx/dotnet"
-  ]
+  ],
+  "release": {
+    "projects": ["packages/**", "!**/*.Tests"],
+    "projectsRelationship": "independent",
+    "version": {
+      "conventionalCommits": true
+    },
+    "changelog": {
+      "projectChangelogs": {
+        "file": "{projectRoot}/CHANGELOG.md",
+        "renderOptions": {
+          "authors": false,
+          "commitReferences": true,
+          "versionTitleDate": true
+        }
+      }
+    },
+    "git": {
+      "commit": true,
+      "commitMessage": "chore(release): {version}",
+      "tag": true,
+      "tagMessage": "Release {version}"
+    },
+    "releaseTagPattern": "{projectName}@v{version}"
+  }
 }

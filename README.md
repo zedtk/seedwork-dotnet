@@ -1,12 +1,12 @@
-# Seedwork .NET - Nx Monorepo# Seedwork .NET - Nx Monorepo# Seedwork .NET - Nx Monorepo# Seedwork .NET - Nx Monorepo# SeedworkDotnet
+# Seedwork .NET - Nx Monorepo
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-
+[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Nx](https://img.shields.io/badge/Nx-22.0-143055?logo=nx)](https://nx.dev/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)[![Nx](https://img.shields.io/badge/Nx-22.0-143055?logo=nx)](https://nx.dev/)
+Workspace Nx moderne pour créer des bibliothèques .NET réutilisables avec versioning sémantique automatique et déploiement sur NuGet.
 
-Workspace Nx moderne pour créer des bibliothèques .NET réutilisables avec versioning sémantique automatique et déploiement sur NuGet.[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)[![Nx](https://img.shields.io/badge/Nx-22.0-143055?logo=nx)](https://nx.dev/)
+**Maintenu par [Ze Dev ToolKit (ZeDTK)](https://github.com/zedtk)**
 
 ## 🎯 ObjectifsWorkspace Nx moderne pour créer des bibliothèques .NET réutilisables avec versioning sémantique automatique et déploiement sur NuGet.[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)Workspace Nx pour bibliothèques .NET avec versioning sémantique automatique et déploiement sur NuGet.<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 

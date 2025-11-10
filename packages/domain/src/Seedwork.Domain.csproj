@@ -4,6 +4,18 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>ZeDTK.Seedwork.Domain</PackageId>
+    <Title>ZeDTK Seedwork Domain Library</Title>
+    <Description>Domain-driven design patterns including aggregate roots and value objects</Description>
+    <Authors>Ze Dev ToolKit (ZeDTK)</Authors>
+    <Company>Ze Dev ToolKit</Company>
+    <Copyright>Copyright © 2024 Ze Dev ToolKit (ZeDTK)</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>ddd;domain-driven-design;seedwork;aggregate;value-object;zedtk</PackageTags>
+    <RepositoryUrl>https://github.com/zedtk/seedwork-dotnet</RepositoryUrl>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
 </Project>

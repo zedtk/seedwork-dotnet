@@ -6,10 +6,15 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet Package Metadata -->
-    <PackageId>Seedwork.Core</PackageId>
-    <Title>Seedwork Core Library</Title>
+    <PackageId>ZeDTK.Seedwork.Core</PackageId>
+    <Title>ZeDTK Seedwork Core Library</Title>
     <Description>Core domain-driven design building blocks and patterns</Description>
-    <PackageTags>ddd;domain-driven-design;seedwork;patterns</PackageTags>
+    <Authors>Ze Dev ToolKit (ZeDTK)</Authors>
+    <Company>Ze Dev ToolKit</Company>
+    <Copyright>Copyright © 2024 Ze Dev ToolKit (ZeDTK)</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>ddd;domain-driven-design;seedwork;patterns;zedtk</PackageTags>
+    <RepositoryUrl>https://github.com/zedtk/seedwork-dotnet</RepositoryUrl>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

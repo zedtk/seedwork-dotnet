@@ -9,7 +9,10 @@
     "production": [
       "default",
       "!{projectRoot}/**/*.spec.cs",
-      "!{projectRoot}/test/**/*"
+      "!{projectRoot}/test/**/*",
+      "!{projectRoot}/**/*.Tests/**/*",
+      "!{projectRoot}/**/bin/**/*",
+      "!{projectRoot}/**/obj/**/*"
     ],
     "sharedGlobals": [
       "{workspaceRoot}/GitVersion.yml",
@@ -19,22 +22,42 @@
   "targetDefaults": {
     "build": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     },
     "test": {
       "cache": true,
-      "dependsOn": ["build"],
-      "inputs": ["default", "^production"]
+      "dependsOn": [
+        "build"
+      ],
+      "inputs": [
+        "default",
+        "^production"
+      ]
     },
     "pack": {
       "cache": true,
-      "dependsOn": ["build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     },
     "publish": {
       "cache": false,
-      "dependsOn": ["pack"]
+      "dependsOn": [
+        "pack"
+      ]
     }
-  }
+  },
+  "plugins": [
+    "@nx/dotnet"
+  ]
 }

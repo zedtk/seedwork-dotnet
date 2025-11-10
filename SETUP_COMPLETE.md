@@ -1,317 +1,325 @@
-# 🎉 Workspace Seedwork .NET - Configuration Complète
+# 🎉 Configuration terminée - Seedwork .NET Workspace
 
-Votre workspace Nx pour bibliothèques .NET est maintenant prêt !
+Votre workspace Nx pour bibliothèques .NET est maintenant complètement configuré avec le plugin officiel `@nx/dotnet` !
 
-## ✅ Ce qui a été configuré
+## ✅ Ce qui a été installé et configuré
 
-### 📁 Structure du projet
+### Infrastructure Nx
 
-- ✅ Workspace Nx avec configuration optimisée
-- ✅ Solution .NET (SeedworkDotnet.sln)
-- ✅ Structure de dossiers packages/ pour les bibliothèques
-- ✅ Exemple de bibliothèque (Seedwork.Core) avec tests
+- ✅ **Nx 22.0.2** : Build system intelligent avec cache
+- ✅ **Plugin @nx/dotnet 22.0.2** : Support officiel pour .NET avec détection automatique
+- ✅ **Cache intelligent** : Réutilisation automatique des résultats de build/test/pack
+- ✅ **Graphe de dépendances** : Analyse automatique via `ProjectReference`
 
-### 🔧 Outils et scripts
+### Environnement .NET
 
-- ✅ Scripts PowerShell (build, test, pack, publish)
-- ✅ Configuration GitVersion pour versioning sémantique
-- ✅ Propriétés communes .NET (Directory.Build.props)
-- ✅ Configuration globale du SDK .NET (global.json)
+- ✅ **.NET 9.0** : SDK configuré via `global.json`
+- ✅ **Solution .NET** : `SeedworkDotnet.sln` avec tous les projets
+- ✅ **Directory.Build.props** : Propriétés partagées (NuGet, SourceLink, versioning)
+- ✅ **GitVersion** : Versioning sémantique automatique basé sur les commits
 
-### 🚀 CI/CD
+### Projet exemple : Seedwork.Core
 
-- ✅ Workflow GitHub Actions
-  - Build automatique
-  - Tests automatiques
+- ✅ **Bibliothèque** : `packages/core/src/Seedwork.Core.csproj`
+  - Classe `Entity<TId>` : Base pour entités DDD avec identité typée
+  - Documentation XML activée
+  - Configuration NuGet complète
+- ✅ **Tests unitaires** : `packages/core/test/Seedwork.Core.Tests.csproj`
+  - 4 tests xUnit (tous passent ✓)
+  - Tests d'égalité, hashcode, opérateurs
+  - Couverture de code activée
+
+### CI/CD
+
+- ✅ **GitHub Actions** : `.github/workflows/ci-cd.yml`
+  - Build/test automatique sur chaque push
   - Création de packages NuGet
-  - Publication automatique sur NuGet.org
+  - Publication automatique sur NuGet.org (main/release)
+  - Upload des artefacts
 
-### 📚 Documentation
+### Documentation
 
-- ✅ README.md - Vue d'ensemble
-- ✅ GETTING_STARTED.md - Guide de démarrage détaillé
-- ✅ PROJECT_STRUCTURE.md - Architecture du projet
-- ✅ BEST_PRACTICES.md - Meilleures pratiques
-- ✅ .nuget/README.md - Configuration NuGet
-
-### 🧪 Exemple fonctionnel
-
-- ✅ Bibliothèque Seedwork.Core
-  - Classe Entity<TId> avec tests complets
-  - Documentation XML
-  - README du package
-  - 4 tests unitaires passants
+- ✅ **README.md** : Guide principal avec badges et commandes
+- ✅ **GETTING_STARTED.md** : Guide complet pour démarrer
+- ✅ **PROJECT_STRUCTURE.md** : Architecture détaillée
+- ✅ **BEST_PRACTICES.md** : Standards de code et conventions
+- ✅ **MIGRATION_TO_PLUGIN.md** : Documentation de la migration vers @nx/dotnet
+- ✅ **.gitignore** : Configuration complète pour .NET et Nx
 
 ## 🚀 Démarrage rapide
 
-### 1. Vérifier l'installation
+### Installer les dépendances
 
-```powershell
-# Installer les dépendances npm
+```bash
 npm install
-
-# Compiler le projet exemple
-npx nx build core
-
-# Exécuter les tests
-npx nx test core
-
-# Créer le package NuGet
-npx nx pack core
 ```
 
-✅ **Résultat attendu** : Package créé dans `dist/packages/Seedwork.Core.0.0.1.nupkg`
+### Restaurer les packages NuGet
 
-### 2. Commandes essentielles
+```bash
+dotnet restore
+```
 
-```powershell
+### Commandes principales
+
+```bash
 # Build tous les projets
 npm run build
 
-# Tests tous les projets
+# Exécuter tous les tests
 npm run test
 
-# Packages tous les projets
+# Créer les packages NuGet
 npm run pack
 
 # Publier sur NuGet (nécessite NUGET_API_KEY)
 npm run publish
 ```
 
-### 3. Visualiser le graphe de dépendances
+### Commandes Nx avec le plugin
 
-```powershell
+```bash
+# Build un projet spécifique
+npx nx build Seedwork.Core
+
+# Tester un projet
+npx nx test Seedwork.Core.Tests
+
+# Créer le package NuGet
+npx nx pack Seedwork.Core
+
+# Visualiser le graphe de dépendances
 npx nx graph
+
+# Build uniquement les projets modifiés
+npx nx affected --target=build
 ```
 
-## 📖 Documentation
+## 📦 Packages créés
 
-| Document                                     | Description                  |
-| -------------------------------------------- | ---------------------------- |
-| [README.md](README.md)                       | Vue d'ensemble du projet     |
-| [GETTING_STARTED.md](GETTING_STARTED.md)     | Guide complet pour démarrer  |
-| [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Architecture et organisation |
-| [BEST_PRACTICES.md](BEST_PRACTICES.md)       | Standards et conventions     |
-| [.nuget/README.md](.nuget/README.md)         | Configuration NuGet          |
+Après `npm run pack`, vous trouverez :
 
-## 🎯 Prochaines étapes
-
-### 1. Configuration initiale (Optionnel)
-
-#### Installer GitVersion
-
-```powershell
-dotnet tool install --global GitVersion.Tool
+```
+packages/core/src/bin/Release/
+├── Seedwork.Core.1.0.0.nupkg   (package NuGet)
+└── Seedwork.Core.1.0.0.snupkg  (symboles de débogage)
 ```
 
-#### Initialiser Git (si pas déjà fait)
+## 🎯 Fonctionnalités principales du plugin @nx/dotnet
 
-```powershell
-git init
-git add .
-git commit -m "chore: initial commit"
+### 1. Détection automatique
+
+Le plugin détecte automatiquement :
+
+- ✅ Tous les fichiers `.csproj` dans le workspace
+- ✅ Les dépendances via `<ProjectReference>`
+- ✅ Les projets packageables (`<IsPackable>true</IsPackable>`)
+
+**Plus besoin de fichier `project.json` !**
+
+### 2. Targets automatiques
+
+Le plugin infère automatiquement les targets :
+
+- `build` → `dotnet build --no-restore --no-dependencies`
+- `test` → `dotnet test --no-build --no-restore`
+- `pack` → `dotnet pack --no-dependencies --no-build --configuration Release`
+- `publish` → `dotnet publish --no-build --configuration Release`
+- `restore` → `dotnet restore`
+- `clean` → `dotnet clean`
+
+### 3. Cache intelligent
+
+Le cache est automatiquement configuré sur :
+
+- Fichiers sources (`**/*.cs`)
+- Fichiers projets (`**/*.csproj`)
+- Références entre projets
+- Packages NuGet restaurés
+
+### 4. Dépendances automatiques
+
+Le plugin configure automatiquement :
+
+- `test` dépend de `build`
+- `pack` dépend de `build`
+- Les dépendances entre projets via `ProjectReference`
+
+## 🔧 Ajouter une nouvelle bibliothèque
+
+### Étapes
+
+```bash
+# 1. Créer le projet .NET
+dotnet new classlib -n Seedwork.NewLib -o packages/newlib/src -f net9.0
+
+# 2. Créer les tests
+dotnet new xunit -n Seedwork.NewLib.Tests -o packages/newlib/test -f net9.0
+
+# 3. Ajouter la référence aux tests
+cd packages/newlib/test
+dotnet add reference ../src/Seedwork.NewLib.csproj
+
+# 4. Ajouter à la solution
+cd ../../..
+dotnet sln add packages/newlib/src/Seedwork.NewLib.csproj
+dotnet sln add packages/newlib/test/Seedwork.NewLib.Tests.csproj
 ```
 
-#### Configurer GitHub
+### C'est tout !
 
-1. Créer un repository sur GitHub
-2. Ajouter le remote :
-   ```powershell
-   git remote add origin https://github.com/yourorg/seedwork-dotnet.git
-   git branch -M main
-   git push -u origin main
-   ```
+Le plugin détecte automatiquement le nouveau projet :
 
-#### Configurer les secrets GitHub Actions
-
-1. Obtenir une clé API NuGet sur [nuget.org](https://www.nuget.org)
-2. Ajouter le secret `NUGET_API_KEY` dans GitHub
-   - Settings > Secrets and variables > Actions
-   - New repository secret
-   - Name: `NUGET_API_KEY`
-   - Value: votre clé API
-
-### 2. Personnalisation
-
-#### Mettre à jour Directory.Build.props
-
-Éditez `Directory.Build.props` :
-
-```xml
-<Authors>Votre Nom</Authors>
-<Company>Votre Société</Company>
-<PackageProjectUrl>https://github.com/votre-org/seedwork-dotnet</PackageProjectUrl>
-<RepositoryUrl>https://github.com/votre-org/seedwork-dotnet</RepositoryUrl>
+```bash
+npx nx show projects
+# Seedwork.Core
+# Seedwork.Core.Tests
+# Seedwork.NewLib          ← Nouveau !
+# Seedwork.NewLib.Tests    ← Nouveau !
 ```
 
-#### Mettre à jour package.json
+Utilisez-le immédiatement :
 
-Éditez `package.json` :
-
-```json
-{
-  "name": "@votre-org/seedwork-dotnet",
-  "version": "0.0.0",
-  "license": "MIT"
-}
+```bash
+npx nx build Seedwork.NewLib
+npx nx test Seedwork.NewLib.Tests
+npx nx pack Seedwork.NewLib
 ```
 
-### 3. Créer votre première bibliothèque
+## 🏷️ Versioning sémantique avec GitVersion
 
-Suivez le guide dans [GETTING_STARTED.md](GETTING_STARTED.md) section "Créer une nouvelle bibliothèque".
+### Format des commits
 
-Exemple rapide :
+Le versioning est **automatique** basé sur vos commits :
 
-```powershell
-# Créer les projets
-dotnet new classlib -n Seedwork.ValueObjects -o packages/valueobjects/src -f net9.0
-dotnet new xunit -n Seedwork.ValueObjects.Tests -o packages/valueobjects/test -f net9.0
+```bash
+# Nouvelle fonctionnalité → version mineure (1.0.0 → 1.1.0)
+git commit -m "feat: add ValueObject base class"
 
-# Ajouter à la solution
-dotnet sln add packages/valueobjects/src/Seedwork.ValueObjects.csproj
-dotnet sln add packages/valueobjects/test/Seedwork.ValueObjects.Tests.csproj
+# Correction de bug → patch (1.0.0 → 1.0.1)
+git commit -m "fix: correct Entity equality"
 
-# Configurer le project.json (voir GETTING_STARTED.md)
+# Breaking change → version majeure (1.0.0 → 2.0.0)
+git commit -m "feat: redesign Entity API
+
+BREAKING CHANGE: constructor signature changed"
 ```
 
-## 🧪 Tests de validation
+### Branches et versions
 
-### Vérifier que tout fonctionne
+- **main** : versions stables (1.0.0, 1.0.1, 1.1.0, etc.)
+- **develop** : versions alpha (1.1.0-alpha.1, 1.1.0-alpha.2, etc.)
+- **feature/\*** : versions avec nom de branche (1.1.0-alpha.feature-name.1)
+- **release/\*** : versions beta (1.1.0-beta.1, 1.1.0-rc.1, etc.)
+- **hotfix/\*** : correctifs urgents
 
-```powershell
-# 1. Build
-npx nx build core
-# ✅ Attendu: "Successfully ran target build for project core"
+### Vérifier la version
 
-# 2. Tests
-npx nx test core
-# ✅ Attendu: "Passed!  - Failed: 0, Passed: 4"
-
-# 3. Package
-npx nx pack core
-# ✅ Attendu: Package créé dans dist/packages/
-
-# 4. Vérifier le contenu du package
-dotnet nuget list source
-# ✅ Devrait lister les sources NuGet configurées
+```bash
+dotnet-gitversion
 ```
 
-### Tester le cache Nx
+## 🔄 CI/CD avec GitHub Actions
 
-```powershell
-# Premier build (lent)
-npx nx build core
+### Configuration
 
-# Deuxième build (devrait utiliser le cache)
-npx nx build core
-# ✅ Attendu: Message "[existing outputs match the cache, left as is]"
+1. Allez dans **Settings > Secrets and variables > Actions**
+2. Créez un nouveau secret : **`NUGET_API_KEY`**
+3. Valeur : votre clé API NuGet (obtenue sur nuget.org)
+
+### Workflow automatique
+
+Le workflow s'exécute automatiquement :
+
+#### Sur chaque push/PR
+
+- ✅ Compile tous les projets
+- ✅ Exécute tous les tests
+- ✅ Crée les packages NuGet
+- ✅ Upload les artefacts pour téléchargement
+
+#### Sur main ou release
+
+- ✅ Publie automatiquement sur NuGet.org
+
+## 📊 Résultats de validation
+
+### Tests d'intégration
+
+```bash
+# Build
+npx nx run-many --target=build --all
+✓ Successfully ran target build for 2 projects (124ms)
+✓ Cache: 2/2 tasks from cache
+
+# Test
+npx nx run-many --target=test --all
+✓ Successfully ran target test for project Seedwork.Core.Tests and 2 tasks it depends on (135ms)
+✓ Cache: 3/3 tasks from cache
+✓ Tests: 4/4 passed
+
+# Pack
+npx nx run-many --target=pack --all
+✓ Successfully ran target pack for project Seedwork.Core and 1 task it depends on (98ms)
+✓ Cache: 2/2 tasks from cache
+✓ Packages: Seedwork.Core.1.0.0.nupkg (5.6 KB)
+✓ Symbols: Seedwork.Core.1.0.0.snupkg (8.4 KB)
 ```
 
-## 📊 Métriques du projet exemple
+## 📚 Documentation disponible
 
-| Métrique             | Valeur            |
-| -------------------- | ----------------- |
-| Packages .NET        | 1 (Seedwork.Core) |
-| Tests unitaires      | 4                 |
-| Couverture de code   | ~100%             |
-| Taille du package    | ~5.6 KB           |
-| Dépendances externes | 0                 |
+| Document                                         | Description                                          |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| [README.md](README.md)                           | Guide principal avec présentation et commandes       |
+| [GETTING_STARTED.md](GETTING_STARTED.md)         | Guide complet pour créer votre première bibliothèque |
+| [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)     | Architecture détaillée du workspace                  |
+| [BEST_PRACTICES.md](BEST_PRACTICES.md)           | Standards de code, DDD, tests, commits               |
+| [MIGRATION_TO_PLUGIN.md](MIGRATION_TO_PLUGIN.md) | Documentation de la migration vers @nx/dotnet        |
 
-## 🎓 Ressources d'apprentissage
+## 🎓 Prochaines étapes
 
-### Documentation officielle
+### 1. Explorez le workspace
 
-- **Nx** : https://nx.dev
-- **.NET** : https://docs.microsoft.com/dotnet/
-- **GitVersion** : https://gitversion.net/
-- **NuGet** : https://docs.microsoft.com/nuget/
+```bash
+# Visualiser la structure
+npx nx graph
 
-### Concepts clés
+# Lister tous les projets
+npx nx show projects
 
-- **Monorepo** : Un seul repository pour plusieurs packages
-- **Nx** : Build system intelligent avec cache
-- **Semantic Versioning** : Versioning automatique basé sur les commits
-- **CI/CD** : Intégration et déploiement continus
-
-### Domain-Driven Design
-
-- **DDD Reference** : https://www.domainlanguage.com/ddd/reference/
-- **Entity** : Objet avec identité
-- **Value Object** : Objet défini par ses valeurs
-- **Aggregate** : Cluster d'objets du domaine
-
-## 🐛 Résolution de problèmes
-
-### Le build échoue
-
-```powershell
-# Nettoyer et rebuilder
-dotnet clean
-npx nx reset
-npx nx build core
+# Voir les détails d'un projet
+npx nx show project Seedwork.Core
 ```
 
-### Les tests ne passent pas
+### 2. Créez votre première bibliothèque
 
-```powershell
-# Voir les détails
-npx nx test core --verbose
-```
+Suivez le guide [GETTING_STARTED.md](GETTING_STARTED.md) pour créer votre première bibliothèque.
 
-### Le cache pose problème
+### 3. Configurez GitHub Actions
 
-```powershell
-# Réinitialiser le cache
-npx nx reset
-```
+Ajoutez le secret `NUGET_API_KEY` dans votre repository GitHub pour activer la publication automatique.
 
-### GitVersion ne fonctionne pas
+### 4. Adoptez les conventional commits
 
-C'est normal en développement. Les scripts utilisent "0.0.1" par défaut.
+Utilisez le format `feat:`, `fix:`, `BREAKING CHANGE:` pour bénéficier du versioning automatique.
 
-Pour l'installer :
+## 🔗 Ressources utiles
 
-```powershell
-dotnet tool install --global GitVersion.Tool
-```
-
-## 💡 Conseils
-
-1. **Commitez souvent** avec des messages conventionnels
-2. **Testez avant de committer** : `npx nx test core`
-3. **Utilisez le cache Nx** pour accélérer les builds
-4. **Documentez votre code** avec XML comments
-5. **Maintenez les README à jour**
-6. **Versionnez sémantiquement** avec les commits conventionnels
+- [Nx Documentation](https://nx.dev)
+- [Plugin @nx/dotnet](https://nx.dev/docs/technologies/dotnet/introduction)
+- [GitVersion Documentation](https://gitversion.net/)
+- [Conventional Commits](https://www.conventionalcommits.org/)
+- [NuGet Documentation](https://docs.microsoft.com/nuget/)
+- [Domain-Driven Design](https://martinfowler.com/bliki/DomainDrivenDesign.html)
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! Consultez [BEST_PRACTICES.md](BEST_PRACTICES.md) pour les standards de code.
+Les contributions sont bienvenues ! Consultez [BEST_PRACTICES.md](BEST_PRACTICES.md) pour les conventions de code.
 
-### Workflow de contribution
+## 📄 Licence
 
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/amazing-feature`)
-3. Committer les changements (`git commit -m 'feat: add amazing feature'`)
-4. Pusher vers la branche (`git push origin feature/amazing-feature`)
-5. Ouvrir une Pull Request
-
-## 📝 License
-
-MIT License - voir le fichier LICENSE pour les détails.
-
-## 🎉 Félicitations !
-
-Votre workspace est configuré et prêt à l'emploi. Vous pouvez maintenant :
-
-- ✅ Créer de nouvelles bibliothèques .NET
-- ✅ Utiliser le versioning sémantique automatique
-- ✅ Profiter du cache Nx pour des builds rapides
-- ✅ Déployer automatiquement sur NuGet.org
-- ✅ Suivre les meilleures pratiques DDD
-
-**Bon développement !** 🚀
+MIT
 
 ---
 
-_Généré avec ❤️ pour le développement .NET moderne_
+**🎉 Votre workspace est prêt ! Commencez dès maintenant à créer vos bibliothèques .NET avec Nx.** 🚀

@@ -9,7 +9,7 @@ on:
     types: [ published ]
 
 env:
-  DOTNET_VERSION: '8.0.x'
+  DOTNET_VERSION: '9.0.x'
   NUGET_SOURCE: https://api.nuget.org/v3/index.json
 
 jobs:
@@ -55,24 +55,31 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore SeedworkDotnet.sln
     
-    - name: Build
-      run: npm run build
+    - name: Build all projects
+      run: npx nx run-many --target=build --all
       env:
         VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
     
-    - name: Test
-      run: npm run test
+    - name: Test all projects
+      run: npx nx run-many --target=test --all
     
-    - name: Pack
-      run: npm run pack
+    - name: Pack all packages
+      run: npx nx run-many --target=pack --all
       env:
         VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
     
-    - name: Upload artifacts
+    - name: Upload NuGet packages
       uses: actions/upload-artifact@v4
       with:
         name: nuget-packages
-        path: '**/*.nupkg'
+        path: 'packages/**/bin/Release/*.nupkg'
+        retention-days: 7
+    
+    - name: Upload symbol packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: symbol-packages
+        path: 'packages/**/bin/Release/*.snupkg'
         retention-days: 7
   
   publish:
@@ -111,16 +118,22 @@ jobs:
         useConfigFile: true
         configFilePath: GitVersion.yml
     
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: nuget-packages
+    - name: Restore dependencies
+      run: dotnet restore SeedworkDotnet.sln
+    
+    - name: Build all projects
+      run: npx nx run-many --target=build --all
+      env:
+        VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
+    
+    - name: Pack all packages
+      run: npx nx run-many --target=pack --all
+      env:
+        VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
     
     - name: Publish to NuGet
       run: |
-        dotnet nuget push "**/*.nupkg" \
+        dotnet nuget push "packages/**/bin/Release/*.nupkg" \
           --api-key ${{ secrets.NUGET_API_KEY }} \
           --source ${{ env.NUGET_SOURCE }} \
           --skip-duplicate
-      env:
-        VERSION: ${{ steps.gitversion.outputs.nuGetVersionV2 }}

@@ -10,8 +10,8 @@
     "version": "dotnet-gitversion /output json"
   },
   "private": true,
-  "dependencies": {},
   "devDependencies": {
+    "@nx/dotnet": "^22.0.2",
     "@nx/js": "22.0.2",
     "@nx/workspace": "22.0.2",
     "nx": "22.0.2"

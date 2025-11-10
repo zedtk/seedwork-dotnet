@@ -6,14 +6,14 @@ public class EntityTests
     {
         public TestEntity(Guid id) : base(id) { }
     }
-    
+
     private class TestEntityWithString : Entity<string>
     {
         public TestEntityWithString(string id) : base(id) { }
     }
 
-    [Fact]
-    public void Entity_WithSameId_ShouldBeEqual()
+    [Test]
+    public async Task Entity_WithSameId_ShouldBeEqual()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -21,26 +21,26 @@ public class EntityTests
         var entity2 = new TestEntity(id);
 
         // Act & Assert
-        Assert.Equal(entity1, entity2);
-        Assert.True(entity1 == entity2);
-        Assert.False(entity1 != entity2);
+        await Assert.That(entity1).IsEqualTo(entity2);
+        await Assert.That(entity1 == entity2).IsTrue();
+        await Assert.That(entity1 != entity2).IsFalse();
     }
 
-    [Fact]
-    public void Entity_WithDifferentId_ShouldNotBeEqual()
+    [Test]
+    public async Task Entity_WithDifferentId_ShouldNotBeEqual()
     {
         // Arrange
         var entity1 = new TestEntity(Guid.NewGuid());
         var entity2 = new TestEntity(Guid.NewGuid());
 
         // Act & Assert
-        Assert.NotEqual(entity1, entity2);
-        Assert.False(entity1 == entity2);
-        Assert.True(entity1 != entity2);
+        await Assert.That(entity1).IsNotEqualTo(entity2);
+        await Assert.That(entity1 == entity2).IsFalse();
+        await Assert.That(entity1 != entity2).IsTrue();
     }
 
-    [Fact]
-    public void Entity_GetHashCode_ShouldBeConsistent()
+    [Test]
+    public async Task Entity_GetHashCode_ShouldBeConsistent()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -51,13 +51,14 @@ public class EntityTests
         var hash2 = entity.GetHashCode();
 
         // Assert
-        Assert.Equal(hash1, hash2);
+        await Assert.That(hash1).IsEqualTo(hash2);
     }
 
-    [Fact]
-    public void Entity_WithNullId_ShouldThrowException()
+    [Test]
+    public async Task Entity_WithNullId_ShouldThrowException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new TestEntityWithString(null!));
+        await Assert.That(() => new TestEntityWithString(null!))
+            .Throws<ArgumentNullException>();
     }
 }

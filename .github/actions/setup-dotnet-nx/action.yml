@@ -1,0 +1,36 @@
+name: "Setup .NET and Nx Environment"
+description: "Sets up .NET, Node.js, installs npm dependencies, and restores NuGet packages"
+
+inputs:
+  dotnet-version:
+    description: ".NET SDK version to setup"
+    required: false
+    default: "9.0.x"
+  node-version:
+    description: "Node.js version to setup"
+    required: false
+    default: "20"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+        cache: true
+        cache-dependency-path: "**/packages.lock.json"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: "npm"
+
+    - name: Install npm dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Restore NuGet dependencies
+      shell: bash
+      run: dotnet restore

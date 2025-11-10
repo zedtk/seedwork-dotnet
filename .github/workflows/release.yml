@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Run in dry-run mode"
+        required: false
+        type: boolean
+        default: true
+
+env:
+  DOTNET_VERSION: "9.0.x"
+  NUGET_SOURCE: https://api.nuget.org/v3/index.json
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore .NET dependencies
+        run: dotnet restore SeedworkDotnet.sln
+
+      - name: Create release and tags
+        run: |
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            npx nx release --skip-publish --dry-run
+          else
+            npx nx release --skip-publish
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version from latest tag
+        if: ${{ inputs.dry-run == false }}
+        id: version
+        run: |
+          VERSION=$(git describe --tags --abbrev=0 | sed 's/.*@v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build with version
+        if: ${{ inputs.dry-run == false }}
+        run: dotnet build SeedworkDotnet.sln -p:Version=${{ steps.version.outputs.version }} --no-restore
+
+      - name: Pack with version
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          for project in packages/*/src/*.csproj; do
+            dotnet pack "$project" -p:Version=${{ steps.version.outputs.version }} --no-build -c Release
+          done
+
+      - name: Publish to NuGet
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          dotnet nuget push "packages/**/bin/Release/*.nupkg" \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source ${{ env.NUGET_SOURCE }} \
+            --skip-duplicate

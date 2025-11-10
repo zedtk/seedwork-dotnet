@@ -60,7 +60,10 @@
     "@nx/dotnet"
   ],
   "release": {
-    "projects": ["packages/**", "!**/*.Tests"],
+    "projects": [
+      "packages/**",
+      "!**/*.Tests"
+    ],
     "projectsRelationship": "independent",
     "version": {
       "conventionalCommits": true
@@ -82,5 +85,6 @@
       "tagMessage": "Release {version}"
     },
     "releaseTagPattern": "{projectName}@v{version}"
-  }
+  },
+  "nxCloudId": "6911ea7a111df92acd3b6960"
 }

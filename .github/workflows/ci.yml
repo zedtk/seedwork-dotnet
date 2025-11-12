@@ -165,7 +165,6 @@ jobs:
     name: Snyk Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     needs: build
     permissions:
       contents: read
@@ -201,7 +200,6 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    if: ${{ secrets.SONAR_TOKEN != '' }}
     needs: build
     permissions:
       contents: read

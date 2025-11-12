@@ -11,6 +11,11 @@
         <PackageVersion Include="TUnit.Assertions" Version="0.5.14" />
         <PackageVersion Include="TUnit.Engine" Version="0.5.14" />
 
+        <!-- Code Analyzers -->
+        <PackageVersion Include="Roslynator.Analyzers" Version="4.13.1" />
+        <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="4.13.1" />
+        <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.13.1" />
+
         <!-- SourceLink -->
         <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     </ItemGroup>

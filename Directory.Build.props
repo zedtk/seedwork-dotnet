@@ -30,4 +30,11 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     </ItemGroup>
+
+    <!-- Code Analyzers for all projects -->
+    <ItemGroup>
+        <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" />
+        <PackageReference Include="Roslynator.CodeAnalysis.Analyzers" PrivateAssets="All" />
+        <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" />
+    </ItemGroup>
 </Project>

@@ -12,6 +12,7 @@ on:
 env:
   DOTNET_VERSION: "9.0.x"
   NUGET_SOURCE: https://api.nuget.org/v3/index.json
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
   release:

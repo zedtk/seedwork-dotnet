@@ -6,13 +6,19 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 env:
-  DOTNET_VERSION: "9.0.x"
+  DOTNET_VERSION: "8.0.x"
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     env:
       NX_BASE: ${{ github.ref != 'refs/heads/main' && 'origin/main' || '' }}
       NX_HEAD: ${{ github.ref != 'refs/heads/main' && 'HEAD' || '' }}
@@ -23,7 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup environment
-        uses: ./.github/actions/setup-dotnet-nx
+        uses: ./.github/actions/setup-environment
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -38,6 +44,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     needs: build
     permissions:
       contents: read
@@ -53,7 +60,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup environment
-        uses: ./.github/actions/setup-dotnet-nx
+        uses: ./.github/actions/setup-environment
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -79,12 +86,11 @@ jobs:
 
       - name: Generate coverage summary for PR
         if: github.event_name == 'pull_request' && always()
-        run: |
-          dotnet tool install -g dotnet-reportgenerator-globaltool
-          reportgenerator \
-            -reports:coverage.cobertura.xml \
-            -targetdir:coverage-report \
-            -reporttypes:"MarkdownSummaryGithub"
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.0
+        with:
+          reports: coverage.cobertura.xml
+          targetdir: coverage-report
+          reporttypes: MarkdownSummaryGithub
 
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request' && always()
@@ -108,6 +114,7 @@ jobs:
   codeql:
     name: CodeQL Security Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     needs: build
     permissions:
       security-events: write
@@ -125,16 +132,13 @@ jobs:
           languages: csharp
           queries: security-and-quality
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore dependencies
-        run: dotnet restore SeedworkDotnet.sln
-
-      - name: Build solution
-        run: dotnet build SeedworkDotnet.sln --no-restore
+      - name: Build all projects with Nx
+        run: npx nx run-many --target=build --all
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -142,6 +146,7 @@ jobs:
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
@@ -159,6 +164,8 @@ jobs:
   snyk:
     name: Snyk Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: ${{ secrets.SNYK_TOKEN != '' }}
     needs: build
     permissions:
       contents: read
@@ -193,6 +200,8 @@ jobs:
   sonarcloud:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: ${{ secrets.SONAR_TOKEN != '' }}
     needs: build
     permissions:
       contents: read
@@ -212,7 +221,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup environment
-        uses: ./.github/actions/setup-dotnet-nx
+        uses: ./.github/actions/setup-environment
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -232,10 +241,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ github.repository_owner }}
+          SONAR_PROJECT_KEY: ${{ github.repository_owner }}_${{ github.event.repository.name }}
         run: |
           dotnet sonarscanner begin \
-            /k:"zedtk_seedwork-dotnet" \
-            /o:"zedtk" \
+            /k:"${{ env.SONAR_PROJECT_KEY }}" \
+            /o:"${{ env.SONAR_ORGANIZATION }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml \
@@ -255,6 +266,7 @@ jobs:
   lint:
     name: Lint & Format Check
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     needs: build
     env:
       NX_BASE: ${{ github.ref != 'refs/heads/main' && 'origin/main' || '' }}
@@ -266,7 +278,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup environment
-        uses: ./.github/actions/setup-dotnet-nx
+        uses: ./.github/actions/setup-environment
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 

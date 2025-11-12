@@ -1,0 +1,24 @@
+name: "Setup .NET SDK"
+description: "Sets up .NET SDK (LTS + global.json) and restores NuGet packages"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get latest LTS .NET version
+      id: dotnet-lts
+      shell: bash
+      run: |
+        ltsVersion=$(curl -s https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json | jq -r '.["releases-index"][] | select(.["release-type"]=="lts" and .["support-phase"]=="active") | .["channel-version"]' | head -1)
+        echo "version=$ltsVersion" >> $GITHUB_OUTPUT
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: ${{ steps.dotnet-lts.outputs.version }} # Needed because Nx MSBuild analyzer requires LTS Runtime and SDK
+        global-json-file: global.json
+        cache: true
+        cache-dependency-path: "**/packages.lock.json"
+
+    - name: Restore NuGet dependencies
+      shell: bash
+      run: dotnet restore

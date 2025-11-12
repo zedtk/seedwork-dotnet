@@ -28,8 +28,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-environment
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - name: Build affected projects (PR/develop)
         if: github.ref != 'refs/heads/main'
@@ -57,8 +60,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-environment
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - name: Test affected projects with coverage (PR/develop)
         if: github.ref != 'refs/heads/main'
@@ -123,8 +129,11 @@ jobs:
           languages: csharp
           queries: security-and-quality
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-environment
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - name: Build all projects with Nx (no cache for CodeQL)
         run: npx nx run-many --target=build --all --skip-nx-cache
@@ -163,8 +172,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-environment
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
 
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/dotnet@v1.0.0
@@ -199,8 +208,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-environment
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - name: Setup Java (required for SonarScanner)
         uses: actions/setup-java@v5
@@ -211,9 +223,8 @@ jobs:
       - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner
 
-      - name: Build and analyze
+      - name: Begin SonarCloud analysis
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_ORGANIZATION: ${{ github.repository_owner }}
           SONAR_PROJECT_KEY: ${{ github.repository_owner }}_${{ github.event.repository.name }}
@@ -227,15 +238,21 @@ jobs:
             /d:sonar.exclusions="**/obj/**,**/bin/**,**/TestResults/**" \
             /d:sonar.coverage.exclusions="**Tests.cs,**Tests/**"
 
-          dotnet build SeedworkDotnet.sln --no-restore
+      - name: Build solution
+        run: dotnet build SeedworkDotnet.sln --no-restore
 
-          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
-            npx nx affected -t test --skip-nx-cache -- --collect-coverage --coverage-output-format opencover --coverage-output coverage.xml
-          else
-            npx nx run-many --target=test --all --skip-nx-cache -- --collect-coverage --coverage-output-format opencover --coverage-output coverage.xml
-          fi
+      - name: Run tests with coverage (affected)
+        if: github.ref != 'refs/heads/main'
+        run: npx nx affected -t test --skip-nx-cache -- --collect-coverage --coverage-output-format opencover --coverage-output coverage.xml
 
-          dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      - name: Run tests with coverage (all)
+        if: github.ref == 'refs/heads/main'
+        run: npx nx run-many --target=test --all --skip-nx-cache -- --collect-coverage --coverage-output-format opencover --coverage-output coverage.xml
+
+      - name: End SonarCloud analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
   lint:
     name: Lint & Format Check
@@ -251,8 +268,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-environment
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - name: Check .NET formatting
         run: dotnet format SeedworkDotnet.sln --verify-no-changes --verbosity diagnostic

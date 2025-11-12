@@ -1,0 +1,15 @@
+name: "Setup Node.js and Nx"
+description: "Sets up Node.js and installs npm dependencies for Nx"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: "package.json"
+        cache: "npm"
+
+    - name: Install npm dependencies
+      shell: bash
+      run: npm ci

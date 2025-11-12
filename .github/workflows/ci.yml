@@ -81,20 +81,13 @@ jobs:
         uses: ./.github/actions/run-nx-task
         with:
           task: test
-          args: --coverage --coverage-output-format cobertura --coverage-output-format xml --report-trx
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v5
-        if: always()
-        with:
-          name: test-results
-          path: "**/TestResults/*.trx"
+          args: --coverage --coverage-output-format cobertura,xml
 
       - name: Generate coverage summary for PR
         if: github.event_name == 'pull_request' && always()
         uses: danielpalme/ReportGenerator-GitHub-Action@5.5.0
         with:
-          reports: "**/coverage.cobertura.xml"
+          reports: "**/TestResults/*.cobertura.xml"
           targetdir: coverage-report
           reporttypes: MarkdownSummaryGithub
 
@@ -110,12 +103,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v5
+      - name: Upload VS Code Coverage for SonarCloud
         if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: "**/coverage.cobertura.xml"
+          name: vscoverage-report
+          path: |
+            **/TestResults/*.xml
+            !**/TestResults/*.cobertura.xml
+          retention-days: 1
 
   codeql:
     name: CodeQL Security Analysis
@@ -204,7 +200,7 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: [build, check-secrets]
+    needs: [test, check-secrets]
     if: github.event.repository.fork == false || needs.check-secrets.outputs.has-sonar-token == 'true'
     permissions:
       contents: read
@@ -230,6 +226,12 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
+      - name: Download VS Code Coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: vscoverage-report
+          path: TestResults
+
       - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner
 
@@ -244,27 +246,12 @@ jobs:
             /o:"${{ env.SONAR_ORGANIZATION }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.cs.opencover.reportsPaths=OpenCover.xml \
+            /d:sonar.cs.vscoveragexml.reportsPaths=TestResults/**/*.xml \
             /d:sonar.exclusions="**/obj/**,**/bin/**,**/TestResults/**" \
             /d:sonar.coverage.exclusions="**Tests.cs,**Tests/**"
 
       - name: Build solution
         run: dotnet build SeedworkDotnet.sln --no-restore
-
-      - name: Run tests with coverage
-        uses: ./.github/actions/run-nx-task
-        with:
-          task: test
-          skip-cache: "true"
-          args: --coverage --coverage-output-format cobertura --coverage-output-format xml --report-trx
-
-      - name: Merge coverage for SonarCloud
-        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.0
-        with:
-          reports: "**/coverage.xml"
-          targetdir: "."
-          reporttypes: "OpenCover"
-          assemblyfilters: "+*"
 
       - name: End SonarCloud analysis
         env:

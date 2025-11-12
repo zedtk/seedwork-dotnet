@@ -1,0 +1,24 @@
+{
+    "name": "Seedwork.Core.Tests",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "targets": {
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "cwd": "packages/core/test",
+                "command": "dotnet run --no-build --results-directory TestResults {args}"
+            },
+            "dependsOn": [
+                "build"
+            ],
+            "cache": true,
+            "inputs": [
+                "default",
+                "^production"
+            ],
+            "outputs": [
+                "{projectRoot}/TestResults"
+            ]
+        }
+    }
+}

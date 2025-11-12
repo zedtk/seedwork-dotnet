@@ -17,21 +17,19 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Prepare command arguments
+    - name: Prepare cache flag
       id: prepare
       shell: bash
       run: |
         CACHE_FLAG="${{ inputs.skip-cache == 'true' && '--skip-nx-cache' || '' }}"
-        ARGS="${{ inputs.args != '' && format('-- {0}', inputs.args) || '' }}"
         echo "cache-flag=$CACHE_FLAG" >> $GITHUB_OUTPUT
-        echo "args=$ARGS" >> $GITHUB_OUTPUT
 
     - name: Run Nx task (affected)
       if: github.ref != 'refs/heads/main'
       shell: bash
-      run: npx nx affected -t ${{ inputs.task }} ${{ steps.prepare.outputs.cache-flag }} ${{ steps.prepare.outputs.args }}
+      run: npx nx affected -t ${{ inputs.task }} ${{ steps.prepare.outputs.cache-flag }} ${{ inputs.args }}
 
     - name: Run Nx task (all)
       if: github.ref == 'refs/heads/main'
       shell: bash
-      run: npx nx run-many --target=${{ inputs.task }} --all ${{ steps.prepare.outputs.cache-flag }} ${{ steps.prepare.outputs.args }}
+      run: npx nx run-many --target=${{ inputs.task }} --all ${{ steps.prepare.outputs.cache-flag }} ${{ inputs.args }}

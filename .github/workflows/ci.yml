@@ -81,7 +81,7 @@ jobs:
         uses: ./.github/actions/run-nx-task
         with:
           task: test
-          args: --collect-coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+          args: --coverage --coverage-output-format cobertura --coverage-output-format xml --report-trx
 
       - name: Upload test results
         uses: actions/upload-artifact@v5
@@ -94,7 +94,7 @@ jobs:
         if: github.event_name == 'pull_request' && always()
         uses: danielpalme/ReportGenerator-GitHub-Action@5.5.0
         with:
-          reports: coverage.cobertura.xml
+          reports: "**/coverage.cobertura.xml"
           targetdir: coverage-report
           reporttypes: MarkdownSummaryGithub
 
@@ -115,7 +115,7 @@ jobs:
         if: always()
         with:
           name: coverage-report
-          path: coverage.cobertura.xml
+          path: "**/coverage.cobertura.xml"
 
   codeql:
     name: CodeQL Security Analysis
@@ -244,7 +244,7 @@ jobs:
             /o:"${{ env.SONAR_ORGANIZATION }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.cs.opencover.reportsPaths=coverage.xml \
+            /d:sonar.cs.opencover.reportsPaths=OpenCover.xml \
             /d:sonar.exclusions="**/obj/**,**/bin/**,**/TestResults/**" \
             /d:sonar.coverage.exclusions="**Tests.cs,**Tests/**"
 
@@ -256,7 +256,15 @@ jobs:
         with:
           task: test
           skip-cache: "true"
-          args: --collect-coverage --coverage-output-format opencover --coverage-output coverage.xml
+          args: --coverage --coverage-output-format cobertura --coverage-output-format xml --report-trx
+
+      - name: Merge coverage for SonarCloud
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.0
+        with:
+          reports: "**/coverage.xml"
+          targetdir: "."
+          reporttypes: "OpenCover"
+          assemblyfilters: "+*"
 
       - name: End SonarCloud analysis
         env:

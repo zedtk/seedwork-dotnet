@@ -166,3 +166,6 @@ FodyWeavers.xsd
 
 ## Visual Studio History
 .vshistory/
+
+## MSBuild preprocessed output
+evaluated.xml

@@ -6,14 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="TUnit" />
-    <PackageReference Include="TUnit.Assertions" />
-    <PackageReference Include="TUnit.Engine" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\src\Seedwork.Core.csproj" />
   </ItemGroup>
 

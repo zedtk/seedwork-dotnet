@@ -184,13 +184,14 @@ jobs:
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
 
+      - name: Setup Snyk
+        uses: snyk/actions/setup@master
+
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/dotnet@v1.0.0
+        run: snyk test --severity-threshold=high --sarif-file-output=snyk.sarif
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --sarif-file-output=snyk.sarif
 
       - name: Upload Snyk results to GitHub Code Scanning
         if: always()

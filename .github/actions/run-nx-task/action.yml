@@ -1,0 +1,37 @@
+name: Run Nx Task
+description: Run Nx task with automatic affected vs all logic based on branch
+
+inputs:
+  task:
+    description: The Nx target to run (build, test, lint, etc.)
+    required: true
+  args:
+    description: Additional arguments to pass to the Nx command
+    required: false
+    default: ""
+  skip-cache:
+    description: Whether to skip Nx cache (--skip-nx-cache)
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare command arguments
+      id: prepare
+      shell: bash
+      run: |
+        CACHE_FLAG="${{ inputs.skip-cache == 'true' && '--skip-nx-cache' || '' }}"
+        ARGS="${{ inputs.args != '' && format('-- {0}', inputs.args) || '' }}"
+        echo "cache-flag=$CACHE_FLAG" >> $GITHUB_OUTPUT
+        echo "args=$ARGS" >> $GITHUB_OUTPUT
+
+    - name: Run Nx task (affected)
+      if: github.ref != 'refs/heads/main'
+      shell: bash
+      run: npx nx affected -t ${{ inputs.task }} ${{ steps.prepare.outputs.cache-flag }} ${{ steps.prepare.outputs.args }}
+
+    - name: Run Nx task (all)
+      if: github.ref == 'refs/heads/main'
+      shell: bash
+      run: npx nx run-many --target=${{ inputs.task }} --all ${{ steps.prepare.outputs.cache-flag }} ${{ steps.prepare.outputs.args }}

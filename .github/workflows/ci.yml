@@ -34,13 +34,10 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
 
-      - name: Build affected projects (PR/develop)
-        if: github.ref != 'refs/heads/main'
-        run: npx nx affected -t build
-
-      - name: Build all projects (main)
-        if: github.ref == 'refs/heads/main'
-        run: npx nx run-many --target=build --all
+      - name: Build projects
+        uses: ./.github/actions/run-nx-task
+        with:
+          task: build
 
   test:
     name: Test
@@ -66,13 +63,11 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
 
-      - name: Test affected projects with coverage (PR/develop)
-        if: github.ref != 'refs/heads/main'
-        run: npx nx affected -t test -- --collect-coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
-
-      - name: Test all projects with coverage (main)
-        if: github.ref == 'refs/heads/main'
-        run: npx nx run-many --target=test --all -- --collect-coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+      - name: Test projects with coverage
+        uses: ./.github/actions/run-nx-task
+        with:
+          task: test
+          args: --collect-coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
 
       - name: Upload test results
         uses: actions/upload-artifact@v5
@@ -241,13 +236,12 @@ jobs:
       - name: Build solution
         run: dotnet build SeedworkDotnet.sln --no-restore
 
-      - name: Run tests with coverage (affected)
-        if: github.ref != 'refs/heads/main'
-        run: npx nx affected -t test --skip-nx-cache -- --collect-coverage --coverage-output-format opencover --coverage-output coverage.xml
-
-      - name: Run tests with coverage (all)
-        if: github.ref == 'refs/heads/main'
-        run: npx nx run-many --target=test --all --skip-nx-cache -- --collect-coverage --coverage-output-format opencover --coverage-output coverage.xml
+      - name: Run tests with coverage
+        uses: ./.github/actions/run-nx-task
+        with:
+          task: test
+          skip-cache: "true"
+          args: --collect-coverage --coverage-output-format opencover --coverage-output coverage.xml
 
       - name: End SonarCloud analysis
         env:
@@ -277,10 +271,7 @@ jobs:
       - name: Check .NET formatting
         run: dotnet format SeedworkDotnet.sln --verify-no-changes --verbosity diagnostic
 
-      - name: Run Nx lint on affected projects (PR/develop)
-        if: github.ref != 'refs/heads/main'
-        run: npx nx affected -t lint
-
-      - name: Run Nx lint on all projects (main)
-        if: github.ref == 'refs/heads/main'
-        run: npx nx run-many --target=lint --all
+      - name: Run Nx lint
+        uses: ./.github/actions/run-nx-task
+        with:
+          task: lint

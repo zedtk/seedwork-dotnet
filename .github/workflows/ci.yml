@@ -15,6 +15,20 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
+  check-secrets:
+    name: Check Secret Availability
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      has-snyk-token: ${{ steps.check.outputs.has-snyk-token }}
+      has-sonar-token: ${{ steps.check.outputs.has-sonar-token }}
+    steps:
+      - name: Check secrets
+        id: check
+        run: |
+          echo "has-snyk-token=${{ secrets.SNYK_TOKEN != '' }}" >> $GITHUB_OUTPUT
+          echo "has-sonar-token=${{ secrets.SONAR_TOKEN != '' }}" >> $GITHUB_OUTPUT
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -158,8 +172,8 @@ jobs:
     name: Snyk Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: build
-    if: github.event.repository.fork == false || secrets.SNYK_TOKEN != ''
+    needs: [build, check-secrets]
+    if: github.event.repository.fork == false || needs.check-secrets.outputs.has-snyk-token == 'true'
     permissions:
       contents: read
       security-events: write
@@ -179,8 +193,8 @@ jobs:
           args: --severity-threshold=high --sarif-file-output=snyk.sarif
 
       - name: Upload Snyk results to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
         if: always()
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk.sarif
           category: snyk
@@ -189,8 +203,8 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: build
-    if: github.event.repository.fork == false || secrets.SONAR_TOKEN != ''
+    needs: [build, check-secrets]
+    if: github.event.repository.fork == false || needs.check-secrets.outputs.has-sonar-token == 'true'
     permissions:
       contents: read
       pull-requests: write

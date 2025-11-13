@@ -25,9 +25,13 @@ jobs:
     steps:
       - name: Check secrets
         id: check
-        run: |
-          echo "has-snyk-token=${{ secrets.SNYK_TOKEN != '' }}" >> $GITHUB_OUTPUT
-          echo "has-sonar-token=${{ secrets.SONAR_TOKEN != '' }}" >> $GITHUB_OUTPUT
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const hasSnykToken = '${{ secrets.SNYK_TOKEN }}' !== '';
+            const hasSonarToken = '${{ secrets.SONAR_TOKEN }}' !== '';
+            core.setOutput('has-snyk-token', hasSnykToken);
+            core.setOutput('has-sonar-token', hasSonarToken);
 
   build:
     name: Build
@@ -87,17 +91,10 @@ jobs:
 
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request' && always()
-        run: |
-          if [ ! -f coverage-report/SummaryGithub.md ]; then
-            echo "::error::Coverage report not found at coverage-report/SummaryGithub.md"
-            exit 1
-          fi
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --body-file coverage-report/SummaryGithub.md \
-            --edit-last || gh pr comment ${{ github.event.pull_request.number }} \
-            --body-file coverage-report/SummaryGithub.md
-        env:
-          GH_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/comment-pr
+        with:
+          body-path: coverage-report/SummaryGithub.md
+          pr-number: ${{ github.event.pull_request.number }}
 
       - name: Upload VS Code Coverage for SonarCloud
         if: always()

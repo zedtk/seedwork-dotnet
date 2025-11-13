@@ -33,9 +33,6 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    env:
-      NX_BASE: ${{ github.ref != 'refs/heads/main' && 'origin/main' || '' }}
-      NX_HEAD: ${{ github.ref != 'refs/heads/main' && 'HEAD' || '' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -62,9 +59,6 @@ jobs:
       contents: read
       checks: write
       pull-requests: write
-    env:
-      NX_BASE: ${{ github.ref != 'refs/heads/main' && 'origin/main' || '' }}
-      NX_HEAD: ${{ github.ref != 'refs/heads/main' && 'HEAD' || '' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -94,12 +88,14 @@ jobs:
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request' && always()
         run: |
-          if [ -f coverage-report/SummaryGithub.md ]; then
-            gh pr comment ${{ github.event.pull_request.number }} \
-              --body-file coverage-report/SummaryGithub.md \
-              --edit-last || gh pr comment ${{ github.event.pull_request.number }} \
-              --body-file coverage-report/SummaryGithub.md
+          if [ ! -f coverage-report/SummaryGithub.md ]; then
+            echo "::error::Coverage report not found at coverage-report/SummaryGithub.md"
+            exit 1
           fi
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file coverage-report/SummaryGithub.md \
+            --edit-last || gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file coverage-report/SummaryGithub.md
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -141,7 +137,10 @@ jobs:
         uses: ./.github/actions/setup-node
 
       - name: Build all projects with Nx (no cache for CodeQL)
-        run: npx nx run-many --target=build --all --skip-nx-cache
+        uses: ./.github/actions/run-nx-task
+        with:
+          task: build
+          skip-cache: "true"
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -169,6 +168,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     needs: [build, check-secrets]
+    # Note: Job outputs are always strings, so we compare with 'true' string
     if: github.event.repository.fork == false || needs.check-secrets.outputs.has-snyk-token == 'true'
     permissions:
       contents: read
@@ -201,13 +201,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     needs: [test, check-secrets]
+    # Note: Job outputs are always strings, so we compare with 'true' string
     if: github.event.repository.fork == false || needs.check-secrets.outputs.has-sonar-token == 'true'
     permissions:
       contents: read
       pull-requests: write
-    env:
-      NX_BASE: ${{ github.ref != 'refs/heads/main' && 'origin/main' || '' }}
-      NX_HEAD: ${{ github.ref != 'refs/heads/main' && 'HEAD' || '' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -250,8 +248,11 @@ jobs:
             /d:sonar.exclusions="**/obj/**,**/bin/**,**/TestResults/**" \
             /d:sonar.coverage.exclusions="**Tests.cs,**Tests/**"
 
-      - name: Build solution
-        run: dotnet build SeedworkDotnet.sln --no-restore
+      - name: Build projects
+        uses: ./.github/actions/run-nx-task
+        with:
+          task: build
+          skip-cache: "true"
 
       - name: End SonarCloud analysis
         env:
@@ -263,9 +264,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     needs: build
-    env:
-      NX_BASE: ${{ github.ref != 'refs/heads/main' && 'origin/main' || '' }}
-      NX_HEAD: ${{ github.ref != 'refs/heads/main' && 'HEAD' || '' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -279,7 +277,7 @@ jobs:
         uses: ./.github/actions/setup-node
 
       - name: Check .NET formatting
-        run: dotnet format SeedworkDotnet.sln --verify-no-changes --verbosity diagnostic
+        run: dotnet format --verify-no-changes --verbosity diagnostic
 
       - name: Run Nx lint
         uses: ./.github/actions/run-nx-task

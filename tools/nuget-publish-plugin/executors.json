@@ -1,0 +1,9 @@
+{
+  "executors": {
+    "nuget-publish": {
+      "implementation": "./src/executors/nuget-publish/nuget-publish",
+      "schema": "./src/executors/nuget-publish/schema.json",
+      "description": "nuget-publish executor"
+    }
+  }
+}

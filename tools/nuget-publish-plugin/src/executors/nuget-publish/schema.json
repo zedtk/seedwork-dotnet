@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": 2,
+  "title": "NuGet Publish Executor",
+  "description": "Publish a NuGet package to a feed",
+  "type": "object",
+  "properties": {
+    "projectPath": {
+      "type": "string",
+      "description": "Path to the .csproj file (relative to workspace root)"
+    },
+    "source": {
+      "type": "string",
+      "description": "NuGet source URL",
+      "default": "https://api.nuget.org/v3/index.json"
+    },
+    "apiKey": {
+      "type": "string",
+      "description": "NuGet API key (can be set via NUGET_API_KEY env variable)"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "If true, copy package to local test feed instead of publishing",
+      "default": false
+    },
+    "configuration": {
+      "type": "string",
+      "description": "Build configuration (Debug or Release)",
+      "default": "Release",
+      "enum": [
+        "Debug",
+        "Release"
+      ]
+    },
+    "skipBuild": {
+      "type": "boolean",
+      "description": "Skip building the project before packing",
+      "default": false
+    },
+    "outputPath": {
+      "type": "string",
+      "description": "Override the default output path for the package"
+    }
+  },
+  "required": [
+    "projectPath"
+  ]
+}

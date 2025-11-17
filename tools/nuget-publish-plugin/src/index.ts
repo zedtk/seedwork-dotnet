@@ -57,14 +57,13 @@ async function createNodesInternal(
     const publishTarget: TargetConfiguration = {
         executor: '@zedtk/nuget-publish-plugin:nuget-publish',
         options: {
-            projectPath: configFilePath,
             source: source,
             dryRun: dryRun,
+            configuration: 'Release', // Default configuration
         },
         configurations: {
             production: {
                 configuration: 'Release',
-                skipBuild: false,
                 dryRun: false,
             },
             development: {
@@ -72,15 +71,13 @@ async function createNodesInternal(
                 dryRun: true,
             },
         },
-        dependsOn: [buildTargetName],
+        dependsOn: ['pack'], // ✅ Changed from 'build' to 'pack'
         cache: true,
         inputs: [
-            '{projectRoot}/**/*.cs',
-            '{projectRoot}/**/*.csproj',
-            '!{projectRoot}/bin/**',
-            '!{projectRoot}/obj/**',
+            // Only the package file matters now
+            '{projectRoot}/bin/{options.configuration}/**/*.nupkg',
         ],
-        outputs: ['{projectRoot}/bin/{options.configuration}/**/*.nupkg'],
+        outputs: [], // Publishing doesn't create outputs in workspace
     };
 
     return {

@@ -2,47 +2,41 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": 2,
   "title": "NuGet Publish Executor",
-  "description": "Publish a NuGet package to a feed",
+  "description": "Publish a NuGet package to a feed (assumes package is already packed)",
   "type": "object",
   "properties": {
-    "projectPath": {
+    "packagePath": {
       "type": "string",
-      "description": "Path to the .csproj file (relative to workspace root)"
+      "description": "Path to the .nupkg file (relative to workspace root). If not provided, will auto-discover."
     },
     "source": {
       "type": "string",
-      "description": "NuGet source URL",
+      "description": "NuGet feed URL to publish to",
       "default": "https://api.nuget.org/v3/index.json"
     },
     "apiKey": {
       "type": "string",
-      "description": "NuGet API key (can be set via NUGET_API_KEY env variable)"
+      "description": "API key for authentication (can also use NUGET_API_KEY environment variable)"
     },
     "dryRun": {
       "type": "boolean",
-      "description": "If true, copy package to local test feed instead of publishing",
+      "description": "Run in dry-run mode (publishes to local feed instead)",
       "default": false
     },
     "configuration": {
       "type": "string",
-      "description": "Build configuration (Debug or Release)",
-      "default": "Release",
-      "enum": [
-        "Debug",
-        "Release"
-      ]
+      "description": "Build configuration (e.g., Release, Debug)",
+      "default": "Release"
     },
-    "skipBuild": {
+    "skipDuplicate": {
       "type": "boolean",
-      "description": "Skip building the project before packing",
+      "description": "Skip publishing if package version already exists on the server",
       "default": false
     },
-    "outputPath": {
+    "dryRunSource": {
       "type": "string",
-      "description": "Override the default output path for the package"
+      "description": "Local folder path for dry-run mode publishing",
+      "default": "local-nuget-feed"
     }
-  },
-  "required": [
-    "projectPath"
-  ]
+  }
 }

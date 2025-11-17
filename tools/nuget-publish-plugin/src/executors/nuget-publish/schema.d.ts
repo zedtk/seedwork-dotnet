@@ -1,9 +1,9 @@
 export interface NugetPublishExecutorSchema {
-    projectPath: string;
+    packagePath?: string;
     source?: string;
     apiKey?: string;
     dryRun?: boolean;
     configuration?: string;
-    skipBuild?: boolean;
-    outputPath?: string;
+    skipDuplicate?: boolean;
+    dryRunSource?: string;
 }

@@ -15,10 +15,15 @@ import { existsSync, readFileSync } from 'fs';
 
 const CSPROJ_GLOB = '**/*.csproj';
 
+const IS_PACKABLE_REGEX = /<IsPackable(?:\s+[^>]*)?>(\s*true\s*)<\/IsPackable>/i;
+
 const DEFAULT_OPTIONS: ResolvedPluginOptions = {
-    targetName: 'publish',
-    source: 'https://api.nuget.org/v3/index.json',
-    dryRunSource: 'local-nuget-feed',
+    targetName: 'nx-release-publish',
+    sources: {
+        local: 'local-nuget-feed',
+        nuget: 'https://api.nuget.org/v3/index.json',
+    },
+    defaultSource: 'local',
     packTargetName: 'pack',
 } as const;
 
@@ -29,21 +34,33 @@ const DEFAULT_OPTIONS: ResolvedPluginOptions = {
 export interface PluginOptions {
     /**
      * Name of the target to create for publishing.
-     * @default 'publish'
+     * @default 'nx-release-publish'
      */
     targetName?: string;
 
     /**
-     * NuGet feed URL to publish to.
-     * @default 'https://api.nuget.org/v3/index.json'
+     * Named NuGet sources configuration.
+     * Maps source name to NuGet feed URL.
+     * 
+     * @example
+     * ```json
+     * {
+     *   "sources": {
+     *     "local": "local-nuget-feed",
+     *     "nuget": "https://api.nuget.org/v3/index.json"
+     *   }
+     * }
+     * ```
+     * 
+     * @default { local: 'local-nuget-feed' }
      */
-    source?: string;
+    sources?: Record<string, string>;
 
     /**
-     * NuGet feed URL or local path for dry-run publishing.
-     * @default 'local-nuget-feed'
+     * Default source name to use when no configuration is specified.
+     * @default 'local'
      */
-    dryRunSource?: string;
+    defaultSource?: string;
 
     /**
      * Name of the pack target to depend on.
@@ -61,19 +78,26 @@ interface ResolvedPluginOptions extends Required<PluginOptions> { }
 /**
  * Nx plugin that automatically creates publish targets for packable .csproj projects.
  * 
- * The plugin creates targets using nx:run-commands that execute dotnet nuget push.
- * Users can customize behavior via command line arguments or target defaults.
+ * The plugin creates targets with multiple configurations for different NuGet sources.
+ * API keys are passed via NUGET_API_KEY environment variable.
  * 
- * @example Basic usage
+ * @example Usage with nx release
  * ```bash
- * # Publish (uses default source from plugin options)
- * nx run my-lib:publish
+ * # Publish to default source (local, no API key needed)
+ * nx release
  * 
- * # Dry run to local feed
- * nx run my-lib:publish --args="--source={workspaceRoot}/local-feed"
+ * # Publish to staging
+ * NUGET_API_KEY=xxx nx release --configuration=staging
  * 
- * # Different source
- * nx run my-lib:publish --args="--source=https://nuget.staging.com/v3/index.json"
+ * # Publish to production
+ * NUGET_API_KEY=xxx nx release --configuration=production
+ * ```
+ * 
+ * @example Direct target execution
+ * ```bash
+ * nx run my-lib:nx-release-publish
+ * nx run my-lib:nx-release-publish:staging
+ * NUGET_API_KEY=xxx nx run my-lib:nx-release-publish:production
  * ```
  */
 export const createNodesV2: CreateNodesV2<PluginOptions> = [
@@ -110,7 +134,7 @@ async function createNodesInternal(
             return {};
         }
 
-        const publishTarget = createPublishTarget(resolvedOptions, projectRoot);
+        const publishTarget = createPublishTarget(resolvedOptions);
 
         return {
             projects: {
@@ -136,11 +160,22 @@ async function createNodesInternal(
 function resolveOptions(options: PluginOptions): ResolvedPluginOptions {
     const resolved = { ...DEFAULT_OPTIONS, ...options };
 
-    if (!isValidNuGetSource(resolved.source)) {
+    // Validate that default source exists
+    if (!resolved.sources[resolved.defaultSource]) {
         throw new Error(
-            `Invalid NuGet source: ${resolved.source}. ` +
-            `Must be a valid URL (http:// or https://) or a local path.`
+            `Default source "${resolved.defaultSource}" not found in sources configuration. ` +
+            `Available sources: ${Object.keys(resolved.sources).join(', ')}`
         );
+    }
+
+    // Validate all source URLs
+    for (const [name, url] of Object.entries(resolved.sources)) {
+        if (!isValidNuGetSource(url)) {
+            throw new Error(
+                `Invalid NuGet source URL for "${name}": ${url}. ` +
+                `Must be a valid URL (http:// or https://) or a local path.`
+            );
+        }
     }
 
     return resolved;
@@ -151,6 +186,7 @@ function isValidNuGetSource(source: string): boolean {
         const url = new URL(source);
         return url.protocol === 'http:' || url.protocol === 'https:';
     } catch {
+        // Allow local paths and relative paths
         return !source.includes('<') && !source.includes('>');
     }
 }
@@ -160,40 +196,47 @@ function isValidNuGetSource(source: string): boolean {
 // ============================================================================
 
 /**
- * Creates a publish target using nx:run-commands.
+ * Creates a publish target with configurations for each defined source.
  * 
- * The command finds the most recent .nupkg file and publishes it using dotnet nuget push.
+ * The command runs from bin/Release directory to simplify package discovery.
+ * Uses Nx option interpolation ({options.source}) for runtime configuration.
  */
-function createPublishTarget(
-    options: ResolvedPluginOptions,
-    projectRoot: string
-): TargetConfiguration {
-    // Command to find the most recent .nupkg file
-    const findPackageCommand = `find {projectRoot}/bin/Release -name "*.nupkg" ! -name "*.symbols.nupkg" | sort | tail -n 1`;
-
-    // Full publish command
+function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguration {
+    // Simple command that runs from the package directory
     const command = [
-        `PACKAGE=$(${findPackageCommand})`,
-        `&&`,
-        `dotnet nuget push "$PACKAGE"`,
-        `--source "${options.dryRunSource}"`,
+        `dotnet nuget push`,
+        `*.nupkg`,
+        `--source {options.source}`,
+        `--api-key \${NUGET_API_KEY}`,
         `--skip-duplicate`,
     ].join(' ');
 
-    return {
+    const targetConfig: TargetConfiguration = {
         executor: 'nx:run-commands',
         options: {
             command,
-            cwd: '{projectRoot}',
+            cwd: '{projectRoot}/bin/Release',
+            source: options.sources[options.defaultSource],
         },
         dependsOn: [options.packTargetName],
         cache: true,
         inputs: [
-            '{projectRoot}/bin/{options.configuration}/**/*.nupkg',
-            '!{projectRoot}/bin/{options.configuration}/**/*.symbols.nupkg',
+            '{projectRoot}/bin/Release/**/*.nupkg'
         ],
         outputs: [],
+        configurations: {},
     };
+
+    // Create a configuration for each named source
+    for (const [sourceName, sourceUrl] of Object.entries(options.sources)) {
+        if (sourceName !== options.defaultSource) {
+            targetConfig.configurations![sourceName] = {
+                source: sourceUrl,
+            };
+        }
+    }
+
+    return targetConfig;
 }
 
 // ============================================================================
@@ -211,7 +254,6 @@ function isProjectPackable(
     }
 
     const content = readFileSync(fullPath, 'utf-8');
-    const isPackableRegex = /<IsPackable(?:\s+[^>]*)?>(\s*true\s*)<\/IsPackable>/i;
 
-    return isPackableRegex.test(content);
+    return IS_PACKABLE_REGEX.test(content);
 }

@@ -101,7 +101,15 @@
   },
   "plugins": [
     "@nx/dotnet",
-    "@zedtk/nuget-publish-plugin"
+    {
+      "plugin": "@zedtk/nuget-publish-plugin",
+      "options": {
+        "sources": {
+          "local": "local-nuget-feed",
+          "production": "local-nuget-prod-feed"
+        }
+      }
+    }
   ],
   "release": {
     "projects": [
@@ -114,17 +122,12 @@
     },
     "changelog": {
       "projectChangelogs": {
-        "file": "{projectRoot}/CHANGELOG.md",
-        "renderOptions": {
-          "authors": false,
-          "commitReferences": true,
-          "versionTitleDate": true
-        }
+        "createRelease": "github",
+        "file": false
       }
     },
     "git": {
-      "commit": true,
-      "commitMessage": "chore(release): {version}",
+      "commit": false,
       "tag": true,
       "tagMessage": "Release {version}"
     },

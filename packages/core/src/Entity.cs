@@ -1,7 +1,7 @@
 namespace Seedwork.Core;
 
 /// <summary>
-/// Base class for entities with strongly-typed identifiers
+/// Base class for entities with strongly-typed identifiers (test)
 /// </summary>
 /// <typeparam name="TId">The type of the entity identifier</typeparam>
 public abstract class Entity<TId> : IEquatable<Entity<TId>>
@@ -12,6 +12,8 @@ public abstract class Entity<TId> : IEquatable<Entity<TId>>
     /// </summary>
     public TId Id { get; protected set; }
 
+    public string Name { get; protected set; }
+
     /// <summary>
     /// Initializes a new instance of the entity with the specified identifier
     /// </summary>
@@ -19,6 +21,7 @@ public abstract class Entity<TId> : IEquatable<Entity<TId>>
     protected Entity(TId id)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
+        Name = id.ToString();
     }
 
     /// <summary>

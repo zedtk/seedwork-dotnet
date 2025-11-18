@@ -202,11 +202,10 @@ function isValidNuGetSource(source: string): boolean {
  * Uses Nx option interpolation ({options.source}) for runtime configuration.
  */
 function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguration {
-    // Simple command that runs from the package directory
     const command = [
         `dotnet nuget push`,
         `*.nupkg`,
-        `--source {options.source}`,
+        `--source {args.source}`,
         `--api-key \${NUGET_API_KEY}`,
         `--skip-duplicate`,
     ].join(' ');
@@ -216,7 +215,9 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
         options: {
             command,
             cwd: '{projectRoot}/bin/Release',
-            source: options.sources[options.defaultSource],
+            args: {
+                source: options.sources[options.defaultSource],
+            },
         },
         dependsOn: [options.packTargetName],
         cache: true,
@@ -231,7 +232,9 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
     for (const [sourceName, sourceUrl] of Object.entries(options.sources)) {
         if (sourceName !== options.defaultSource) {
             targetConfig.configurations![sourceName] = {
-                source: sourceUrl,
+                args: {
+                    source: sourceUrl,
+                },
             };
         }
     }

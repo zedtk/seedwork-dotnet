@@ -49,7 +49,7 @@
     "pack": {
       "cache": true,
       "dependsOn": [
-        "build"
+        "build:release"
       ],
       "inputs": [
         "production",

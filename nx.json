@@ -101,15 +101,7 @@
   },
   "plugins": [
     "@nx/dotnet",
-    {
-      "plugin": "@zedtk/nuget-publish-plugin",
-      "options": {
-        "targetName": "nuget-publish",
-        "source": "https://api.nuget.org/v3/index.json",
-        "dryRun": true,
-        "buildTargetName": "build"
-      }
-    }
+    "@zedtk/nuget-publish-plugin"
   ],
   "release": {
     "projects": [

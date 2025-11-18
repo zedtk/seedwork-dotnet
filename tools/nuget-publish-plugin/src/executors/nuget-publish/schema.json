@@ -35,7 +35,7 @@
     },
     "dryRunSource": {
       "type": "string",
-      "description": "Local folder path for dry-run mode publishing",
+      "description": "Source for dry-run mode: local directory path (e.g., 'local-nuget-feed') or staging feed URL (e.g., 'https://nuget.staging.company.com/v3/index.json')",
       "default": "local-nuget-feed"
     }
   }

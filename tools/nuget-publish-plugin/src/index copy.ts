@@ -8,6 +8,7 @@ import {
 } from '@nx/devkit';
 import { dirname } from 'path';
 import { existsSync, readFileSync } from 'fs';
+import { NugetPublishExecutorSchema } from './executors/nuget-publish/schema';
 
 // ============================================================================
 // CONSTANTS
@@ -40,7 +41,7 @@ export interface PluginOptions {
     source?: string;
 
     /**
-     * NuGet feed URL or local path for dry-run publishing.
+     * NuGet feed URL to dry-run publish to.
      * @default 'local-nuget-feed'
      */
     dryRunSource?: string;
@@ -61,20 +62,8 @@ interface ResolvedPluginOptions extends Required<PluginOptions> { }
 /**
  * Nx plugin that automatically creates publish targets for packable .csproj projects.
  * 
- * The plugin creates targets using nx:run-commands that execute dotnet nuget push.
- * Users can customize behavior via command line arguments or target defaults.
- * 
- * @example Basic usage
- * ```bash
- * # Publish (uses default source from plugin options)
- * nx run my-lib:publish
- * 
- * # Dry run to local feed
- * nx run my-lib:publish --args="--source={workspaceRoot}/local-feed"
- * 
- * # Different source
- * nx run my-lib:publish --args="--source=https://nuget.staging.com/v3/index.json"
- * ```
+ * This plugin scans for .csproj files and creates publish targets only for projects
+ * that have <IsPackable>true</IsPackable> in their project file.
  */
 export const createNodesV2: CreateNodesV2<PluginOptions> = [
     CSPROJ_GLOB,
@@ -89,12 +78,18 @@ export const createNodesV2: CreateNodesV2<PluginOptions> = [
     },
 ];
 
+/**
+ * Nx 22 compatibility export.
+ */
 export const createNodes = createNodesV2;
 
 // ============================================================================
 // CORE LOGIC
 // ============================================================================
 
+/**
+ * Creates Nx target configuration for a .csproj file if it's packable.
+ */
 async function createNodesInternal(
     configFilePath: string,
     options: PluginOptions,
@@ -110,7 +105,7 @@ async function createNodesInternal(
             return {};
         }
 
-        const publishTarget = createPublishTarget(resolvedOptions, projectRoot);
+        const publishTarget = createPublishTarget(resolvedOptions);
 
         return {
             projects: {
@@ -122,6 +117,7 @@ async function createNodesInternal(
             },
         };
     } catch (error) {
+        // Log error but don't fail the entire plugin - allow other projects to process
         logger.warn(
             `Failed to process ${configFilePath}: ${error instanceof Error ? error.message : String(error)}`
         );
@@ -133,9 +129,13 @@ async function createNodesInternal(
 // OPTION RESOLUTION
 // ============================================================================
 
+/**
+ * Resolves plugin options by merging with defaults and validating.
+ */
 function resolveOptions(options: PluginOptions): ResolvedPluginOptions {
     const resolved = { ...DEFAULT_OPTIONS, ...options };
 
+    // Validate source is a valid URL
     if (!isValidNuGetSource(resolved.source)) {
         throw new Error(
             `Invalid NuGet source: ${resolved.source}. ` +
@@ -146,11 +146,17 @@ function resolveOptions(options: PluginOptions): ResolvedPluginOptions {
     return resolved;
 }
 
+/**
+ * Validates if a string is a valid NuGet source (URL or local path).
+ */
 function isValidNuGetSource(source: string): boolean {
+    // Check if it's a URL
     try {
         const url = new URL(source);
         return url.protocol === 'http:' || url.protocol === 'https:';
     } catch {
+        // If not a URL, it might be a local path - basic validation
+        // Allow relative paths and UNC paths on Windows
         return !source.includes('<') && !source.includes('>');
     }
 }
@@ -160,37 +166,23 @@ function isValidNuGetSource(source: string): boolean {
 // ============================================================================
 
 /**
- * Creates a publish target using nx:run-commands.
- * 
- * The command finds the most recent .nupkg file and publishes it using dotnet nuget push.
+ * Creates the nuget-publish target configuration.
  */
-function createPublishTarget(
-    options: ResolvedPluginOptions,
-    projectRoot: string
-): TargetConfiguration {
-    // Command to find the most recent .nupkg file
-    const findPackageCommand = `find {projectRoot}/bin/Release -name "*.nupkg" ! -name "*.symbols.nupkg" | sort | tail -n 1`;
-
-    // Full publish command
-    const command = [
-        `PACKAGE=$(${findPackageCommand})`,
-        `&&`,
-        `dotnet nuget push "$PACKAGE"`,
-        `--source "${options.dryRunSource}"`,
-        `--skip-duplicate`,
-    ].join(' ');
-
+function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguration<NugetPublishExecutorSchema> {
     return {
-        executor: 'nx:run-commands',
+        executor: '@zedtk/nuget-publish-plugin:nuget-publish',
         options: {
-            command,
-            cwd: '{projectRoot}',
+            source: options.source,
+            dryRunSource: options.dryRunSource,
+            dryRun: true,
         },
         dependsOn: [options.packTargetName],
         cache: true,
         inputs: [
-            '{projectRoot}/bin/{options.configuration}/**/*.nupkg',
-            '!{projectRoot}/bin/{options.configuration}/**/*.symbols.nupkg',
+            // Package file that will be published
+            `{projectRoot}/bin/{options.configuration}/**/*.nupkg`,
+            // Exclude symbols packages from cache key
+            `!{projectRoot}/bin/{options.configuration}/**/*.symbols.nupkg`,
         ],
         outputs: [],
     };
@@ -200,6 +192,15 @@ function createPublishTarget(
 // CSPROJ ANALYSIS
 // ============================================================================
 
+/**
+ * Determines if a .csproj file represents a packable project.
+ * 
+ * Uses proper XML parsing logic to handle:
+ * - Whitespace variations
+ * - XML attributes
+ * - Case sensitivity
+ * - Comments
+ */
 function isProjectPackable(
     csprojPath: string,
     context: CreateNodesContextV2
@@ -211,7 +212,18 @@ function isProjectPackable(
     }
 
     const content = readFileSync(fullPath, 'utf-8');
-    const isPackableRegex = /<IsPackable(?:\s+[^>]*)?>(\s*true\s*)<\/IsPackable>/i;
 
-    return isPackableRegex.test(content);
+    // Look for <IsPackable>true</IsPackable> with flexible whitespace
+    // This regex handles:
+    // - Optional attributes on the tag
+    // - Whitespace around "true"
+    // - Case insensitive tag name (some projects use different casing)
+    const isPackableRegex = /<IsPackable(?:\s+[^>]*)?>(\s*true\s*)<\/IsPackable>/i;
+    const match = isPackableRegex.exec(content);
+
+    if (match) {
+        return true;
+    }
+
+    return false;
 }

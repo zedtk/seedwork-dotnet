@@ -6,7 +6,7 @@ import {
     joinPathFragments,
     logger,
 } from '@nx/devkit';
-import { dirname } from 'path';
+import { dirname, resolve } from 'path';
 import { existsSync, readFileSync } from 'fs';
 
 // ============================================================================
@@ -20,7 +20,7 @@ const IS_PACKABLE_REGEX = /<IsPackable(?:\s+[^>]*)?>(\s*true\s*)<\/IsPackable>/i
 const DEFAULT_OPTIONS: ResolvedPluginOptions = {
     targetName: 'nx-release-publish',
     sources: {
-        local: 'local-nuget-feed',
+        local: './local-nuget-feed',
         nuget: 'https://api.nuget.org/v3/index.json',
     },
     defaultSource: 'local',
@@ -46,13 +46,19 @@ export interface PluginOptions {
      * ```json
      * {
      *   "sources": {
-     *     "local": "local-nuget-feed",
+     *     "local": "./local-nuget-feed",
      *     "nuget": "https://api.nuget.org/v3/index.json"
      *   }
      * }
      * ```
      * 
-     * @default { local: 'local-nuget-feed' }
+     * @default
+     * ```json
+     * {
+     *   "local": "./local-nuget-feed",
+     *   "nuget": "https://api.nuget.org/v3/index.json"
+     * }
+     * ```
      */
     sources?: Record<string, string>;
 
@@ -124,11 +130,11 @@ async function createNodesInternal(
     options: PluginOptions,
     context: CreateNodesContextV2
 ) {
-    const resolvedOptions = resolveOptions(options);
+    const resolvedOptions = resolveOptions(options, context.workspaceRoot);
     const projectRoot = dirname(configFilePath);
 
     try {
-        const isPackable = isProjectPackable(configFilePath, context);
+        const isPackable = isProjectPackable(configFilePath, context.workspaceRoot);
 
         if (!isPackable) {
             return {};
@@ -157,7 +163,7 @@ async function createNodesInternal(
 // OPTION RESOLUTION
 // ============================================================================
 
-function resolveOptions(options: PluginOptions): ResolvedPluginOptions {
+function resolveOptions(options: PluginOptions, workspaceRoot: string): ResolvedPluginOptions {
     const resolved = { ...DEFAULT_OPTIONS, ...options };
 
     // Validate that default source exists
@@ -168,12 +174,14 @@ function resolveOptions(options: PluginOptions): ResolvedPluginOptions {
         );
     }
 
-    // Validate all source URLs
-    for (const [name, url] of Object.entries(resolved.sources)) {
-        if (!isValidNuGetSource(url)) {
+    // Normalize all source URLs
+    for (const name of Object.keys(resolved.sources)) {
+        try {
+            resolved.sources[name] = normalizeNuGetSource(resolved.sources[name], workspaceRoot);
+        }
+        catch (error) {
             throw new Error(
-                `Invalid NuGet source URL for "${name}": ${url}. ` +
-                `Must be a valid URL (http:// or https://) or a local path.`
+                `Failed to normalize NuGet source "${name}": ${error instanceof Error ? error.message : String(error)}`
             );
         }
     }
@@ -181,14 +189,49 @@ function resolveOptions(options: PluginOptions): ResolvedPluginOptions {
     return resolved;
 }
 
-function isValidNuGetSource(source: string): boolean {
-    try {
-        const url = new URL(source);
-        return url.protocol === 'http:' || url.protocol === 'https:';
-    } catch {
-        // Allow local paths and relative paths
-        return !source.includes('<') && !source.includes('>');
+function normalizeNuGetSource(source: string, workspaceRoot: string): string {
+    if (!source || !source.trim()) {
+        throw new Error('NuGet source cannot be empty');
     }
+
+    const trimmed = source.trim();
+
+    // UNC network path
+    if (/^\\\\[^\\]+\\[^\\]+/.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Absolute paths
+    // Windows: C:\path or C:/path
+    if (/^[a-zA-Z]:[/\\]/.test(trimmed)) {
+        return trimmed;
+    }
+    // Unix: /path
+    if (/^\//.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Check for URL using URL constructor
+    try {
+        const url = new URL(trimmed);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+            return url.href;
+        }
+
+        throw new Error(`Unsupported URL protocol in ${trimmed}: ${url.protocol}. Only http:// and https:// are supported.`);
+    } catch (error) {
+        if (error instanceof Error && error.message.startsWith('Unsupported URL protocol')) {
+            throw error;
+        }
+    }
+
+    // Invalid characters check
+    if (/[<>"|?*\x00-\x1F]/.test(trimmed)) {
+        throw new Error(`Invalid characters in NuGet source path: ${trimmed}`);
+    }
+
+    // Relative path - convert to absolute
+    return resolve(workspaceRoot, trimmed);
 }
 
 // ============================================================================
@@ -215,9 +258,7 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
         options: {
             command,
             cwd: '{projectRoot}/bin/Release',
-            args: {
-                source: options.sources[options.defaultSource],
-            },
+            source: options.sources[options.defaultSource],
         },
         dependsOn: [options.packTargetName],
         cache: true,
@@ -232,9 +273,7 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
     for (const [sourceName, sourceUrl] of Object.entries(options.sources)) {
         if (sourceName !== options.defaultSource) {
             targetConfig.configurations![sourceName] = {
-                args: {
-                    source: sourceUrl,
-                },
+                source: sourceUrl,
             };
         }
     }
@@ -248,9 +287,9 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
 
 function isProjectPackable(
     csprojPath: string,
-    context: CreateNodesContextV2
+    workspaceRoot: string
 ): boolean {
-    const fullPath = joinPathFragments(context.workspaceRoot, csprojPath);
+    const fullPath = joinPathFragments(workspaceRoot, csprojPath);
 
     if (!existsSync(fullPath)) {
         throw new Error(`File not found: ${csprojPath}`);

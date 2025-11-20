@@ -29,6 +29,10 @@ const DEFAULT_OPTIONS: ResolvedPluginOptions = {
 // TYPES
 // ============================================================================
 
+/**
+ * Configuration options for the NuGet publish plugin.
+ * @see {@link README.md} for detailed setup and usage instructions.
+ */
 export interface PluginOptions {
     /**
      * Name of the target to create for publishing.
@@ -37,56 +41,68 @@ export interface PluginOptions {
     targetName?: string;
 
     /**
-     * Name of the pack target to depend on.
+     * Name of the pack target that this publish target depends on.
+     * The pack target should create .nupkg files before publishing.
      * @default 'pack'
      */
     packTargetName?: string;
 
     /**
-     * Build configuration to use when publishing.
+     * Build configuration directory where .nupkg files are located.
+     * Must match the configuration used by your pack target.
      * @default 'Release'
      */
     buildConfiguration?: string;
 
     /**
-     * NuGet source name or URL to publish to.
-     * @default nuget.org
+     * NuGet source name to publish to.
+     * This should reference a source configured in nuget.config or via `dotnet nuget add source`.
+     * Can be overridden at graph generation time using the NUGET_SOURCE_NAME environment variable.
+     * @default 'nuget.org'
      */
     sourceName?: string;
 }
 
-interface ResolvedPluginOptions extends Required<PluginOptions> { }
+/**
+ * Internal type representing fully resolved plugin options with all defaults applied.
+ * @internal
+ */
+type ResolvedPluginOptions = Required<PluginOptions>;
 
 // ============================================================================
 // PLUGIN EXPORTS
 // ============================================================================
 
 /**
- * Nx plugin that automatically creates publish targets for packable .csproj projects.
+ * Nx plugin that creates publish targets for packable .NET projects.
  * 
- * Source resolution order:
- * 1. NUGET_SOURCE_NAME environment variable (at graph generation time)
- * 2. sourceName plugin option (from nx.json)
- * 3. Default: 'nuget.org'
+ * Automatically scans for .csproj files with `<IsPackable>true</IsPackable>` and adds
+ * publish targets that integrate with `nx release`.
  * 
- * Note: Environment variable is checked when the project graph is created,
- * not when the task executes. For runtime configuration, use nx configurations.
+ * **Source Resolution Priority:**
+ * 1. `NUGET_SOURCE_NAME` environment variable (read at graph generation time)
+ * 2. `sourceName` plugin option
+ * 3. Default: `'nuget.org'`
  * 
- * @example Usage with nx release
- * ```bash
- * # Publish to local
- * NUGET_SOURCE_NAME=local
- * nx release
+ * **Important:** The `NUGET_SOURCE_NAME` environment variable is read when the project
+ * graph is generated, not when tasks execute. Run `nx reset` after changing it to clear
+ * the graph cache.
  * 
- * # Publish to production
- * dotnet nuget setapikey xxx
- * nx release
- * ```
+ * @see {@link README.md} for complete setup, configuration, and usage guide.
  * 
- * @example Direct target execution
- * ```bash
- * NUGET_SOURCE_NAME=local
- * nx run my-lib:nx-release-publish
+ * @example
+ * ```json
+ * // nx.json
+ * {
+ *   "plugins": [
+ *     {
+ *       "plugin": "@zedtk/nuget-publish-plugin",
+ *       "options": {
+ *         "sourceName": "local-feed"
+ *     }
+ *   }
+ *   ],
+ * }
  * ```
  */
 export const createNodesV2: CreateNodesV2<PluginOptions> = [
@@ -102,18 +118,26 @@ export const createNodesV2: CreateNodesV2<PluginOptions> = [
     },
 ];
 
+/**
+ * Backwards compatibility export for Nx < 19.
+ * @see {@link createNodesV2}
+ */
 export const createNodes = createNodesV2;
 
 // ============================================================================
 // CORE LOGIC
 // ============================================================================
 
+/**
+ * Processes a .csproj file and creates project configuration if packable.
+ * @internal
+ */
 async function createNodesInternal(
     configFilePath: string,
     options: PluginOptions,
     context: CreateNodesContextV2
 ) {
-    const resolvedOptions = resolveOptions(options, context.workspaceRoot);
+    const resolvedOptions: ResolvedPluginOptions = { ...DEFAULT_OPTIONS, ...options };
     const projectRoot = dirname(configFilePath);
 
     try {
@@ -136,20 +160,11 @@ async function createNodesInternal(
         };
     } catch (error) {
         logger.warn(
-            `[nx-release-publish] Failed to process ${configFilePath}: ${error instanceof Error ? error.message : String(error)}\nTarget will not be created for this project.`
+            `[nx-release-publish] Failed to process ${configFilePath}: ${error instanceof Error ? error.message : String(error)
+            }\nTarget will not be created for this project.`
         );
         return {};
     }
-}
-
-// ============================================================================
-// OPTION RESOLUTION
-// ============================================================================
-
-function resolveOptions(options: PluginOptions, workspaceRoot: string): ResolvedPluginOptions {
-    const resolved = { ...DEFAULT_OPTIONS, ...options };
-
-    return resolved;
 }
 
 // ============================================================================
@@ -157,12 +172,13 @@ function resolveOptions(options: PluginOptions, workspaceRoot: string): Resolved
 // ============================================================================
 
 /**
- * Creates a publish target with configurations for each defined source.
+ * Creates an Nx target for publishing NuGet packages.
  * 
- * The command runs from bin/[<options.buildConfiguration>] directory to simplify package discovery.
- * Uses Nx option interpolation ({options.source}) for runtime configuration.
+ * Source is resolved from NUGET_SOURCE_NAME env var (if set) or options.sourceName.
+ * @internal
  */
 function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguration {
+    // Env var is read at graph generation time, not execution time
     const sourceName = env.NUGET_SOURCE_NAME || options.sourceName;
 
     const command = [
@@ -179,9 +195,9 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
             cwd: `{projectRoot}/bin/${options.buildConfiguration}`,
         },
         dependsOn: [options.packTargetName],
-        cache: false,
-        inputs: [],
-        outputs: [],
+        cache: false, // Publishing has side effects and should never be cached
+        inputs: [], // Not applicable when cache is disabled
+        outputs: [], // Publishing doesn't create local artifacts
     };
 
     return targetConfig;
@@ -192,9 +208,9 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
 // ============================================================================
 
 /**
- * Determines if a .csproj file is packable by checking for the <IsPackable>true</IsPackable> tag.
- * @throws Error if the file does not exist.
- * @returns true if the project is packable, false otherwise.
+ * Checks if a .csproj is packable by looking for `<IsPackable>true</IsPackable>`.
+ * @throws {Error} If file does not exist
+ * @internal
  */
 function isProjectPackable(
     csprojPath: string,

@@ -101,15 +101,7 @@
   },
   "plugins": [
     "@nx/dotnet",
-    {
-      "plugin": "@zedtk/nuget-publish-plugin",
-      "options": {
-        "sources": {
-          "local": "local-nuget-feed",
-          "production": "local-nuget-prod-feed"
-        }
-      }
-    }
+    "@zedtk/nuget-publish-plugin"
   ],
   "release": {
     "projects": [

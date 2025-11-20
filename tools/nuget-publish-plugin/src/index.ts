@@ -6,8 +6,9 @@ import {
     joinPathFragments,
     logger,
 } from '@nx/devkit';
-import { dirname, resolve } from 'path';
+import { dirname } from 'path';
 import { existsSync, readFileSync } from 'fs';
+import { env } from 'process';
 
 // ============================================================================
 // CONSTANTS
@@ -20,6 +21,8 @@ const IS_PACKABLE_REGEX = /<IsPackable(?:\s+[^>]*)?>(\s*true\s*)<\/IsPackable>/i
 const DEFAULT_OPTIONS: ResolvedPluginOptions = {
     targetName: 'nx-release-publish',
     packTargetName: 'pack',
+    buildConfiguration: 'Release',
+    sourceName: 'nuget.org',
 } as const;
 
 // ============================================================================
@@ -38,6 +41,18 @@ export interface PluginOptions {
      * @default 'pack'
      */
     packTargetName?: string;
+
+    /**
+     * Build configuration to use when publishing.
+     * @default 'Release'
+     */
+    buildConfiguration?: string;
+
+    /**
+     * NuGet source name or URL to publish to.
+     * @default nuget.org
+     */
+    sourceName?: string;
 }
 
 interface ResolvedPluginOptions extends Required<PluginOptions> { }
@@ -48,21 +63,30 @@ interface ResolvedPluginOptions extends Required<PluginOptions> { }
 
 /**
  * Nx plugin that automatically creates publish targets for packable .csproj projects.
- * Source and API key are passed via NUGET_SOURCE and NUGET_API_KEY environment variables.
+ * 
+ * Source resolution order:
+ * 1. NUGET_SOURCE_NAME environment variable (at graph generation time)
+ * 2. sourceName plugin option (from nx.json)
+ * 3. Default: 'nuget.org'
+ * 
+ * Note: Environment variable is checked when the project graph is created,
+ * not when the task executes. For runtime configuration, use nx configurations.
  * 
  * @example Usage with nx release
  * ```bash
  * # Publish to local
- * NUGET_SOURCE=local-feed nx release
+ * NUGET_SOURCE_NAME=local
+ * nx release
  * 
  * # Publish to production
- * NUGET_SOURCE=https://api.nuget.org/v3/index.json NUGET_API_KEY=xxx nx release
+ * dotnet nuget setapikey xxx
+ * nx release
  * ```
  * 
  * @example Direct target execution
  * ```bash
- * NUGET_SOURCE=local-feed nx run my-lib:nx-release-publish
- * NUGET_SOURCE=https://api.nuget.org/v3/index.json NUGET_API_KEY=xxx nx run my-lib:nx-release-publish
+ * NUGET_SOURCE_NAME=local
+ * nx run my-lib:nx-release-publish
  * ```
  */
 export const createNodesV2: CreateNodesV2<PluginOptions> = [
@@ -112,7 +136,7 @@ async function createNodesInternal(
         };
     } catch (error) {
         logger.warn(
-            `Failed to process ${configFilePath}: ${error instanceof Error ? error.message : String(error)}`
+            `[nx-release-publish] Failed to process ${configFilePath}: ${error instanceof Error ? error.message : String(error)}\nTarget will not be created for this project.`
         );
         return {};
     }
@@ -128,51 +152,6 @@ function resolveOptions(options: PluginOptions, workspaceRoot: string): Resolved
     return resolved;
 }
 
-function normalizeNuGetSource(source: string, workspaceRoot: string): string {
-    if (!source || !source.trim()) {
-        throw new Error('NuGet source cannot be empty');
-    }
-
-    const trimmed = source.trim();
-
-    // UNC network path
-    if (/^\\\\[^\\]+\\[^\\]+/.test(trimmed)) {
-        return trimmed;
-    }
-
-    // Absolute paths
-    // Windows: C:\path or C:/path
-    if (/^[a-zA-Z]:[/\\]/.test(trimmed)) {
-        return trimmed;
-    }
-    // Unix: /path
-    if (/^\//.test(trimmed)) {
-        return trimmed;
-    }
-
-    // Check for URL using URL constructor
-    try {
-        const url = new URL(trimmed);
-        if (url.protocol === 'http:' || url.protocol === 'https:') {
-            return url.href;
-        }
-
-        throw new Error(`Unsupported URL protocol in ${trimmed}: ${url.protocol}. Only http:// and https:// are supported.`);
-    } catch (error) {
-        if (error instanceof Error && error.message.startsWith('Unsupported URL protocol')) {
-            throw error;
-        }
-    }
-
-    // Invalid characters check
-    if (/[<>"|?*\x00-\x1F]/.test(trimmed)) {
-        throw new Error(`Invalid characters in NuGet source path: ${trimmed}`);
-    }
-
-    // Relative path - convert to absolute
-    return resolve(workspaceRoot, trimmed);
-}
-
 // ============================================================================
 // TARGET CREATION
 // ============================================================================
@@ -180,19 +159,16 @@ function normalizeNuGetSource(source: string, workspaceRoot: string): string {
 /**
  * Creates a publish target with configurations for each defined source.
  * 
- * The command runs from bin/Release directory to simplify package discovery.
+ * The command runs from bin/[<options.buildConfiguration>] directory to simplify package discovery.
  * Uses Nx option interpolation ({options.source}) for runtime configuration.
  */
 function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguration {
-    const isWindows = process.platform === 'win32';
-    const sourceArg = isWindows ? '%NUGET_SOURCE%' : '$NUGET_SOURCE';
-    const apiKeyArg = isWindows ? '%NUGET_API_KEY%' : '$NUGET_API_KEY';
+    const sourceName = env.NUGET_SOURCE_NAME || options.sourceName;
 
     const command = [
         `dotnet nuget push`,
         `*.nupkg`,
-        `--source ${sourceArg}`,
-        `--api-key ${apiKeyArg}`,
+        `--source ${sourceName}`,
         `--skip-duplicate`,
     ].join(' ');
 
@@ -200,12 +176,11 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
         executor: 'nx:run-commands',
         options: {
             command,
-            cwd: '{projectRoot}/bin/Release',
+            cwd: `{projectRoot}/bin/${options.buildConfiguration}`,
         },
         dependsOn: [options.packTargetName],
-        inputs: [
-            '{projectRoot}/bin/Release/**/*.nupkg'
-        ],
+        cache: false,
+        inputs: [],
         outputs: [],
     };
 
@@ -216,6 +191,11 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
 // CSPROJ ANALYSIS
 // ============================================================================
 
+/**
+ * Determines if a .csproj file is packable by checking for the <IsPackable>true</IsPackable> tag.
+ * @throws Error if the file does not exist.
+ * @returns true if the project is packable, false otherwise.
+ */
 function isProjectPackable(
     csprojPath: string,
     workspaceRoot: string

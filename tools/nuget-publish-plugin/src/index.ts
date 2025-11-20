@@ -19,11 +19,6 @@ const IS_PACKABLE_REGEX = /<IsPackable(?:\s+[^>]*)?>(\s*true\s*)<\/IsPackable>/i
 
 const DEFAULT_OPTIONS: ResolvedPluginOptions = {
     targetName: 'nx-release-publish',
-    sources: {
-        local: './local-nuget-feed',
-        nuget: 'https://api.nuget.org/v3/index.json',
-    },
-    defaultSource: 'local',
     packTargetName: 'pack',
 } as const;
 
@@ -37,36 +32,6 @@ export interface PluginOptions {
      * @default 'nx-release-publish'
      */
     targetName?: string;
-
-    /**
-     * Named NuGet sources configuration.
-     * Maps source name to NuGet feed URL.
-     * 
-     * @example
-     * ```json
-     * {
-     *   "sources": {
-     *     "local": "./local-nuget-feed",
-     *     "nuget": "https://api.nuget.org/v3/index.json"
-     *   }
-     * }
-     * ```
-     * 
-     * @default
-     * ```json
-     * {
-     *   "local": "./local-nuget-feed",
-     *   "nuget": "https://api.nuget.org/v3/index.json"
-     * }
-     * ```
-     */
-    sources?: Record<string, string>;
-
-    /**
-     * Default source name to use when no configuration is specified.
-     * @default 'local'
-     */
-    defaultSource?: string;
 
     /**
      * Name of the pack target to depend on.
@@ -83,27 +48,21 @@ interface ResolvedPluginOptions extends Required<PluginOptions> { }
 
 /**
  * Nx plugin that automatically creates publish targets for packable .csproj projects.
- * 
- * The plugin creates targets with multiple configurations for different NuGet sources.
- * API keys are passed via NUGET_API_KEY environment variable.
+ * Source and API key are passed via NUGET_SOURCE and NUGET_API_KEY environment variables.
  * 
  * @example Usage with nx release
  * ```bash
- * # Publish to default source (local, no API key needed)
- * nx release
- * 
- * # Publish to staging
- * NUGET_API_KEY=xxx nx release --configuration=staging
+ * # Publish to local
+ * NUGET_SOURCE=local-feed nx release
  * 
  * # Publish to production
- * NUGET_API_KEY=xxx nx release --configuration=production
+ * NUGET_SOURCE=https://api.nuget.org/v3/index.json NUGET_API_KEY=xxx nx release
  * ```
  * 
  * @example Direct target execution
  * ```bash
- * nx run my-lib:nx-release-publish
- * nx run my-lib:nx-release-publish:staging
- * NUGET_API_KEY=xxx nx run my-lib:nx-release-publish:production
+ * NUGET_SOURCE=local-feed nx run my-lib:nx-release-publish
+ * NUGET_SOURCE=https://api.nuget.org/v3/index.json NUGET_API_KEY=xxx nx run my-lib:nx-release-publish
  * ```
  */
 export const createNodesV2: CreateNodesV2<PluginOptions> = [
@@ -166,26 +125,6 @@ async function createNodesInternal(
 function resolveOptions(options: PluginOptions, workspaceRoot: string): ResolvedPluginOptions {
     const resolved = { ...DEFAULT_OPTIONS, ...options };
 
-    // Validate that default source exists
-    if (!resolved.sources[resolved.defaultSource]) {
-        throw new Error(
-            `Default source "${resolved.defaultSource}" not found in sources configuration. ` +
-            `Available sources: ${Object.keys(resolved.sources).join(', ')}`
-        );
-    }
-
-    // Normalize all source URLs
-    for (const name of Object.keys(resolved.sources)) {
-        try {
-            resolved.sources[name] = normalizeNuGetSource(resolved.sources[name], workspaceRoot);
-        }
-        catch (error) {
-            throw new Error(
-                `Failed to normalize NuGet source "${name}": ${error instanceof Error ? error.message : String(error)}`
-            );
-        }
-    }
-
     return resolved;
 }
 
@@ -245,11 +184,15 @@ function normalizeNuGetSource(source: string, workspaceRoot: string): string {
  * Uses Nx option interpolation ({options.source}) for runtime configuration.
  */
 function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguration {
+    const isWindows = process.platform === 'win32';
+    const sourceArg = isWindows ? '%NUGET_SOURCE%' : '$NUGET_SOURCE';
+    const apiKeyArg = isWindows ? '%NUGET_API_KEY%' : '$NUGET_API_KEY';
+
     const command = [
         `dotnet nuget push`,
         `*.nupkg`,
-        `--source {args.source}`,
-        `--api-key \${NUGET_API_KEY}`,
+        `--source ${sourceArg}`,
+        `--api-key ${apiKeyArg}`,
         `--skip-duplicate`,
     ].join(' ');
 
@@ -258,25 +201,13 @@ function createPublishTarget(options: ResolvedPluginOptions): TargetConfiguratio
         options: {
             command,
             cwd: '{projectRoot}/bin/Release',
-            source: options.sources[options.defaultSource],
         },
         dependsOn: [options.packTargetName],
-        cache: true,
         inputs: [
             '{projectRoot}/bin/Release/**/*.nupkg'
         ],
         outputs: [],
-        configurations: {},
     };
-
-    // Create a configuration for each named source
-    for (const [sourceName, sourceUrl] of Object.entries(options.sources)) {
-        if (sourceName !== options.defaultSource) {
-            targetConfig.configurations![sourceName] = {
-                source: sourceUrl,
-            };
-        }
-    }
 
     return targetConfig;
 }

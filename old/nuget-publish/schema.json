@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": 2,
+  "title": "NuGet Publish Executor",
+  "description": "Publish a NuGet package to a feed (assumes package is already packed)",
+  "type": "object",
+  "properties": {
+    "packagePath": {
+      "type": "string",
+      "description": "Path to the .nupkg file (relative to workspace root). If not provided, will auto-discover."
+    },
+    "source": {
+      "type": "string",
+      "description": "NuGet feed URL to publish to",
+      "default": "https://api.nuget.org/v3/index.json"
+    },
+    "apiKey": {
+      "type": "string",
+      "description": "API key for authentication (can also use NUGET_API_KEY environment variable)"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Run in dry-run mode (publishes to local feed instead)",
+      "default": false
+    },
+    "configuration": {
+      "type": "string",
+      "description": "Build configuration (e.g., Release, Debug)",
+      "default": "Release"
+    },
+    "skipDuplicate": {
+      "type": "boolean",
+      "description": "Skip publishing if package version already exists on the server",
+      "default": false
+    },
+    "dryRunSource": {
+      "type": "string",
+      "description": "Source for dry-run mode: local directory path (e.g., 'local-nuget-feed') or staging feed URL (e.g., 'https://nuget.staging.company.com/v3/index.json')",
+      "default": "local-nuget-feed"
+    }
+  }
+}

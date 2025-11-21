@@ -38,6 +38,11 @@
         <PackageReference Include="Roslynator.Formatting.Analyzers" PrivateAssets="All" />
     </ItemGroup>
 
+    <!-- Common packable project section (projects with <IsPackable>true</IsPackable>) -->
+    <ItemGroup Condition="'$(IsPackable)' == 'true'">
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
     <!-- Common test project packages -->
     <ItemGroup Condition="'$(IsTestProject)' == 'true'">
         <PackageReference Include="TUnit" />

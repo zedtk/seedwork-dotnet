@@ -246,10 +246,7 @@ jobs:
             /d:sonar.coverage.exclusions="**Tests.cs,**Tests/**"
 
       - name: Build projects
-        uses: ./.github/actions/run-nx-task
-        with:
-          task: build
-          skip-cache: "true"
+        run: dotnet build --no-restore
 
       - name: End SonarCloud analysis
         env:

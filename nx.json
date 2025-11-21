@@ -101,7 +101,7 @@
   },
   "plugins": [
     "@nx/dotnet",
-    "@zedtk/nuget-publish-plugin"
+    "@zedtk/nx-dotnet-nuget-publish"
   ],
   "release": {
     "projects": [

@@ -1,0 +1,55 @@
+{
+  "name": "nx-dotnet-nuget-publish",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "tools/nx-dotnet-nuget-publish/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "outputPath": "dist/tools/nx-dotnet-nuget-publish",
+        "main": "tools/nx-dotnet-nuget-publish/src/index.ts",
+        "tsConfig": "tools/nx-dotnet-nuget-publish/tsconfig.lib.json",
+        "assets": [
+          "tools/nx-dotnet-nuget-publish/*.md",
+          {
+            "input": "./tools/nx-dotnet-nuget-publish/src",
+            "glob": "**/!(*.ts)",
+            "output": "./src"
+          },
+          {
+            "input": "./tools/nx-dotnet-nuget-publish/src",
+            "glob": "**/*.d.ts",
+            "output": "./src"
+          },
+          {
+            "input": "./tools/nx-dotnet-nuget-publish",
+            "glob": "generators.json",
+            "output": "."
+          },
+          {
+            "input": "./tools/nx-dotnet-nuget-publish",
+            "glob": "executors.json",
+            "output": "."
+          }
+        ]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
+      "options": {
+        "jestConfig": "tools/nx-dotnet-nuget-publish/jest.config.cts"
+      }
+    }
+  }
+}

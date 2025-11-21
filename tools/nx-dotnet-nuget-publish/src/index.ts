@@ -96,7 +96,7 @@ type ResolvedPluginOptions = Required<PluginOptions>;
  * {
  *   "plugins": [
  *     {
- *       "plugin": "@zedtk/nuget-publish-plugin",
+ *       "plugin": "@zedtk/nx-dotnet-nuget-publish",
  *       "options": {
  *         "sourceName": "local-feed"
  *     }

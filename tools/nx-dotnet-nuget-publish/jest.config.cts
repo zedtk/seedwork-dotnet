@@ -1,5 +1,5 @@
 module.exports = {
-    displayName: 'nuget-publish-plugin',
+    displayName: 'nx-dotnet-nuget-publish',
     preset: '../../jest.preset.js',
     testEnvironment: 'node',
     transform: {
@@ -9,5 +9,5 @@ module.exports = {
         ],
     },
     moduleFileExtensions: ['ts', 'js', 'html'],
-    coverageDirectory: '../../coverage/tools/nuget-publish-plugin',
+    coverageDirectory: '../../coverage/tools/nx-dotnet-nuget-publish',
 };

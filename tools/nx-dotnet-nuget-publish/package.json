@@ -1,5 +1,5 @@
 {
-  "name": "@zedtk/nuget-publish-plugin",
+  "name": "@zedtk/nx-dotnet-nuget-publish",
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",

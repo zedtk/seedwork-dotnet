@@ -10,13 +10,20 @@
     "importHelpers": true,
     "target": "ES2021",
     "module": "commonjs",
-    "lib": ["ES2021"],
+    "lib": [
+      "ES2021"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@zedtk/nuget-publish-plugin": ["tools/nuget-publish-plugin/src/index.ts"]
+      "@zedtk/nx-dotnet-nuget-publish": [
+        "tools/nx-dotnet-nuget-publish/src/index.ts"
+      ]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }
